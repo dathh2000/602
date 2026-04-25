@@ -1,0 +1,51 @@
+'use client'
+import { useRoom } from '@/src/hooks/useRoom'
+import { useExpenses } from '@/src/hooks/useExpenses'
+import { useDebts } from '@/src/hooks/useDebts'
+import { DebtCard } from '@/src/components/debt/DebtCard'
+import { LoadingScreen } from '@/src/components/ui/LoadingScreen'
+import { formatVND } from '@/src/lib/utils'
+
+export default function DebtsPage() {
+  const { room, members, loading } = useRoom()
+  const expenses = useExpenses(room?.id)
+  const debts = useDebts(expenses, members)
+
+  if (loading) return <LoadingScreen />
+
+  const settled = expenses.filter(e =>
+    !e.paidFromFund && e.participants.length > 0 &&
+    e.participants.every(p => e.settlements[p]?.paid)
+  ).slice(0, 5)
+
+  return (
+    <main className="p-4 space-y-4">
+      <div className="bg-gradient-to-r from-amber-400 to-red-500 rounded-2xl p-4 text-white">
+        <p className="text-sm font-bold">👥 Công nợ</p>
+        <p className="text-xs opacity-80">Đã tối giản hóa số giao dịch</p>
+      </div>
+
+      {debts.length === 0 ? (
+        <p className="text-center text-gray-400 text-sm py-8">🎉 Không ai nợ ai cả!</p>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-xs text-amber-700 font-bold uppercase">Cần thanh toán</p>
+          {debts.map((d, i) => (
+            <DebtCard key={i} debt={d} members={members} expenses={expenses} roomId={room?.id ?? ''} />
+          ))}
+        </div>
+      )}
+
+      {settled.length > 0 && (
+        <div>
+          <p className="text-xs text-amber-700 font-bold uppercase mb-2">✅ Đã thanh toán gần đây</p>
+          <div className="bg-green-50 border border-green-200 rounded-xl p-3 space-y-1">
+            {settled.map(e => (
+              <p key={e.id} className="text-xs text-green-700">{e.title} · {formatVND(e.amount)}</p>
+            ))}
+          </div>
+        </div>
+      )}
+    </main>
+  )
+}
