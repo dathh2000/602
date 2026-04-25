@@ -49,29 +49,37 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
 
   return (
     <div className="bg-white rounded-xl p-3 shadow-sm">
-      <div className="flex items-center gap-2 mb-2">
-        <div className="flex flex-col items-center gap-0.5">
+      <div className="flex items-center gap-1 mb-2">
+        <div className="flex flex-col items-center gap-0.5 flex-1 min-w-0">
           <Avatar name={fromMember?.displayName ?? '?'} index={fromIndex} size="md" />
-          <span className="text-xs font-semibold text-gray-700 text-center">{fromMember?.displayName ?? '?'}</span>
+          <span className="text-xs font-semibold text-gray-700 text-center w-full break-words leading-tight mt-0.5">
+            {fromMember?.displayName ?? '?'}
+          </span>
         </div>
-        <span className="text-xs text-gray-400 flex-1 text-center">→ nợ →</span>
-        <div className="flex flex-col items-center gap-0.5">
+        <span className="text-xs text-gray-400 shrink-0 px-1">→ nợ →</span>
+        <div className="flex flex-col items-center gap-0.5 flex-1 min-w-0">
           <Avatar name={toMember?.displayName ?? '?'} index={toIndex} size="md" />
-          <span className="text-xs font-semibold text-gray-700 max-w-[60px] truncate">{toMember?.displayName ?? '?'}</span>
+          <span className="text-xs font-semibold text-gray-700 text-center w-full break-words leading-tight mt-0.5">
+            {toMember?.displayName ?? '?'}
+          </span>
         </div>
-        {relatedExpenses.length > 0 && (
-          <button onClick={handleSettle} disabled={settling}
-            className="ml-2 bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-lg disabled:opacity-50 shrink-0">
-            {settling ? '...' : '✓ Đã trả'}
-          </button>
-        )}
       </div>
+
       <div className="flex justify-between items-center">
         <button onClick={() => setExpanded(!expanded)} className="text-xs text-gray-400 underline">
           {relatedExpenses.length} khoản {expanded ? '▲' : '▼'}
         </button>
-        <p className="font-extrabold text-red-500">{formatVND(debt.amount)}</p>
+        <div className="flex items-center gap-2">
+          {relatedExpenses.length > 0 && (
+            <button onClick={handleSettle} disabled={settling}
+              className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-lg disabled:opacity-50">
+              {settling ? '...' : '✓ Đã trả'}
+            </button>
+          )}
+          <p className="font-extrabold text-red-500">{formatVND(debt.amount)}</p>
+        </div>
       </div>
+
       {expanded && relatedExpenses.length > 0 && (
         <div className="mt-2 space-y-1 border-t border-dashed border-amber-200 pt-2">
           {relatedExpenses.map(e => (
