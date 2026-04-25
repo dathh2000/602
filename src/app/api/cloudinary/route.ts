@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import crypto from 'crypto'
+import { v2 as cloudinary } from 'cloudinary'
+
+cloudinary.config({
+  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+})
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.CLOUDINARY_API_KEY
-  const apiSecret = process.env.CLOUDINARY_API_SECRET
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
-
-  if (!apiKey || !apiSecret || !cloudName) {
+  if (!process.env.CLOUDINARY_API_KEY) {
     return NextResponse.json({ error: 'Cloudinary chưa cấu hình' }, { status: 500 })
   }
 
@@ -14,26 +16,23 @@ export async function POST(req: NextRequest) {
   const file = formData.get('file') as File | null
   if (!file) return NextResponse.json({ error: 'Không có file' }, { status: 400 })
 
-  const timestamp = Math.round(Date.now() / 1000)
-  const folder = 'phong_tro'
-  const paramStr = `folder=${folder}&timestamp=${timestamp}`
-  const signature = crypto.createHash('sha1').update(paramStr + apiSecret).digest('hex')
+  const bytes = await file.arrayBuffer()
+  const buffer = Buffer.from(bytes)
 
-  const uploadData = new FormData()
-  uploadData.append('file', file)
-  uploadData.append('api_key', apiKey)
-  uploadData.append('timestamp', String(timestamp))
-  uploadData.append('signature', signature)
-  uploadData.append('folder', folder)
+  try {
+    const result = await new Promise<{ secure_url: string }>((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        { folder: 'phong_tro', resource_type: 'image' },
+        (error, result) => {
+          if (error || !result) reject(error ?? new Error('Upload thất bại'))
+          else resolve(result as { secure_url: string })
+        }
+      ).end(buffer)
+    })
 
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-    method: 'POST',
-    body: uploadData,
-  })
-
-  const data = await res.json()
-  if (!res.ok) {
-    return NextResponse.json({ error: data.error?.message ?? 'Upload thất bại' }, { status: res.status })
+    return NextResponse.json({ url: result.secure_url })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Upload thất bại'
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
-  return NextResponse.json({ url: data.secure_url })
 }
