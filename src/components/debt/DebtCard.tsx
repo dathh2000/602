@@ -88,8 +88,8 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
         <div className="flex items-center gap-2">
           {relatedExpenses.length > 0 && (
             <button onClick={handleSettle} disabled={settling}
-              className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-lg disabled:opacity-50">
-              {settling ? '...' : '✓ Đã trả'}
+              className="bg-green-100 text-green-700 text-xs font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 flex items-center gap-1">
+              {settling ? '⏳' : '💸'} {settling ? 'Đang xử lý...' : 'Đánh dấu đã trả'}
             </button>
           )}
           <p className="font-extrabold text-red-500">{formatVND(debt.amount)}</p>
