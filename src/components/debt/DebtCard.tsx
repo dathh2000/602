@@ -23,6 +23,7 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
   const fromIndex  = members.findIndex(m => m.id === debt.from)
   const toIndex    = members.findIndex(m => m.id === debt.to)
 
+  // Expenses đóng góp vào khoản nợ này (from nợ to)
   const relatedExpenses = expenses.filter(e =>
     !e.paidFromFund &&
     e.participants.includes(debt.from) &&
@@ -33,12 +34,27 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
   async function handleSettle() {
     setSettling(true)
     try {
-      await Promise.all(relatedExpenses.map(e =>
-        updateDoc(doc(expensesCol(roomId), e.id), {
-          [`settlements.${debt.from}.paid`]: true,
-          [`settlements.${debt.from}.paidAt`]: serverTimestamp(),
-        })
-      ))
+      const updates: Promise<void>[] = []
+
+      for (const e of expenses) {
+        if (e.paidFromFund) continue
+        // from nợ to: mark from đã trả
+        if (e.paidBy === debt.to && e.participants.includes(debt.from) && !e.settlements[debt.from]?.paid) {
+          updates.push(updateDoc(doc(expensesCol(roomId), e.id), {
+            [`settlements.${debt.from}.paid`]: true,
+            [`settlements.${debt.from}.paidAt`]: serverTimestamp(),
+          }))
+        }
+        // to nợ from (ngược chiều, đã được net): mark to đã trả luôn
+        if (e.paidBy === debt.from && e.participants.includes(debt.to) && !e.settlements[debt.to]?.paid) {
+          updates.push(updateDoc(doc(expensesCol(roomId), e.id), {
+            [`settlements.${debt.to}.paid`]: true,
+            [`settlements.${debt.to}.paidAt`]: serverTimestamp(),
+          }))
+        }
+      }
+
+      await Promise.all(updates)
       toast.success('Đã đánh dấu thanh toán!')
     } catch {
       toast.error('Có lỗi xảy ra')
