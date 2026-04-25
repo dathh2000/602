@@ -52,7 +52,7 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
       <div className="flex items-center gap-2 mb-2">
         <div className="flex flex-col items-center gap-0.5">
           <Avatar name={fromMember?.displayName ?? '?'} index={fromIndex} size="md" />
-          <span className="text-xs font-semibold text-gray-700 max-w-[60px] truncate">{fromMember?.displayName ?? '?'}</span>
+          <span className="text-xs font-semibold text-gray-700 text-center">{fromMember?.displayName ?? '?'}</span>
         </div>
         <span className="text-xs text-gray-400 flex-1 text-center">→ nợ →</span>
         <div className="flex flex-col items-center gap-0.5">
