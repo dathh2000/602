@@ -21,6 +21,11 @@ export function parseAmountInput(value: string): number {
   return parseInt(value.replace(/\./g, ''), 10) || 0
 }
 
+export function currentYearMonth(): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
+
 export function daysUntilDue(dueDay: number): number {
   const now = new Date()
   const due = new Date(now.getFullYear(), now.getMonth(), dueDay)

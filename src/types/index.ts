@@ -39,6 +39,7 @@ export interface Bill {
   notifyDaysBefore: number
   active: boolean
   imageUrl?: string
+  lastPaidMonth?: string
 }
 
 export interface BillPayment {

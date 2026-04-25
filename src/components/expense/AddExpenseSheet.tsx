@@ -1,9 +1,9 @@
 'use client'
 import { useState } from 'react'
-import { addDoc, serverTimestamp, writeBatch, doc as fsDoc, increment } from 'firebase/firestore'
+import { addDoc, updateDoc, serverTimestamp, writeBatch, doc as fsDoc, increment } from 'firebase/firestore'
 import { format } from 'date-fns'
 import { db } from '@/src/lib/firebase/config'
-import { expensesCol, fundDoc, fundTxCol, billPaymentsCol } from '@/src/lib/firebase/collections'
+import { expensesCol, fundDoc, fundTxCol, billPaymentsCol, billDoc } from '@/src/lib/firebase/collections'
 import { BottomSheet } from '@/src/components/ui/BottomSheet'
 import { Avatar } from '@/src/components/ui/Avatar'
 import { ImageUpload } from '@/src/components/ui/ImageUpload'
@@ -104,9 +104,12 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
 
       if (selectedBillId) {
         const month = format(new Date(), 'yyyy-MM')
-        await addDoc(billPaymentsCol(roomId, selectedBillId), {
-          paid: true, paidAt: serverTimestamp(), paidBy: currentUserId, month,
-        })
+        await Promise.all([
+          addDoc(billPaymentsCol(roomId, selectedBillId), {
+            paid: true, paidAt: serverTimestamp(), paidBy: currentUserId, month,
+          }),
+          updateDoc(billDoc(roomId, selectedBillId), { lastPaidMonth: month }),
+        ])
       }
 
       toast.success('Đã lưu chi tiêu!')

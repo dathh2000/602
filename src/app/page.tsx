@@ -13,7 +13,7 @@ import { ExpenseCard } from '@/src/components/expense/ExpenseCard'
 import { FAB } from '@/src/components/layout/FAB'
 import { Tag } from '@/src/components/ui/Tag'
 import { LoadingScreen } from '@/src/components/ui/LoadingScreen'
-import { formatVND, daysUntilDue } from '@/src/lib/utils'
+import { formatVND, daysUntilDue, currentYearMonth } from '@/src/lib/utils'
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth()
@@ -52,7 +52,7 @@ export default function DashboardPage() {
   const myOwed = myDebts.reduce((s, d) => s + d.amount, 0)
   const owedMe = owedToMe.reduce((s, d) => s + d.amount, 0)
   const upcomingBills = bills
-    .filter(b => daysUntilDue(b.dueDay) <= 7)
+    .filter(b => daysUntilDue(b.dueDay) <= 7 && b.lastPaidMonth !== currentYearMonth())
     .sort((a, b) => daysUntilDue(a.dueDay) - daysUntilDue(b.dueDay))
 
   return (

@@ -1,8 +1,8 @@
 'use client'
 import { useState } from 'react'
-import { addDoc, serverTimestamp } from 'firebase/firestore'
+import { addDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { format } from 'date-fns'
-import { billPaymentsCol } from '@/src/lib/firebase/collections'
+import { billPaymentsCol, billDoc } from '@/src/lib/firebase/collections'
 import { useRoom } from '@/src/hooks/useRoom'
 import { useBills } from '@/src/hooks/useBills'
 import { useAuth } from '@/src/hooks/useAuth'
@@ -34,9 +34,12 @@ export default function BillsPage() {
     setPendingBills(prev => new Set(prev).add(billId))
     try {
       const month = format(new Date(), 'yyyy-MM')
-      await addDoc(billPaymentsCol(room.id, billId), {
-        paid: true, paidAt: serverTimestamp(), paidBy: user.uid, month,
-      })
+      await Promise.all([
+        addDoc(billPaymentsCol(room.id, billId), {
+          paid: true, paidAt: serverTimestamp(), paidBy: user.uid, month,
+        }),
+        updateDoc(billDoc(room.id, billId), { lastPaidMonth: month }),
+      ])
       toast.success('Đã đánh dấu đã đóng!')
     } finally {
       setPendingBills(prev => { const s = new Set(prev); s.delete(billId); return s })
