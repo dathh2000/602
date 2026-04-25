@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { onAuthStateChanged, signInWithRedirect, signOut as firebaseSignOut, GoogleAuthProvider, User } from 'firebase/auth'
+import { onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut as firebaseSignOut, GoogleAuthProvider, User } from 'firebase/auth'
 import { auth } from '@/src/lib/firebase/config'
 
 export function useAuth() {
@@ -21,7 +21,17 @@ export function useAuth() {
 
   async function signInWithGoogle() {
     const provider = new GoogleAuthProvider()
-    await signInWithRedirect(auth, provider)
+    try {
+      await signInWithPopup(auth, provider)
+    } catch (err: unknown) {
+      // Popup bị block → fallback sang redirect
+      const code = (err as { code?: string })?.code
+      if (code === 'auth/popup-blocked' || code === 'auth/popup-closed-by-user') {
+        await signInWithRedirect(auth, provider)
+      } else {
+        throw err
+      }
+    }
   }
 
   async function signOut() {

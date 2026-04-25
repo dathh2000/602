@@ -1,14 +1,25 @@
 'use client'
 import { useState } from 'react'
 import { useAuth } from '@/src/hooks/useAuth'
+import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const { signInWithGoogle } = useAuth()
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   async function handleGoogle() {
     setLoading(true)
-    await signInWithGoogle() // redirects away, loading stays true
+    setError('')
+    try {
+      await signInWithGoogle()
+      router.replace('/')
+    } catch (err: unknown) {
+      console.error('Login error:', err)
+      setError('Đăng nhập thất bại. Thử lại nhé!')
+      setLoading(false)
+    }
   }
 
   return (
@@ -25,8 +36,9 @@ export default function LoginPage() {
             <path fill="#FBBC05" d="M10.6 28.7A14.8 14.8 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.5 10.8l8.1-6.1z"/>
             <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.2 0-11.5-4.2-13.4-9.9l-8.1 6.1C6.7 42.6 14.7 48 24 48z"/>
           </svg>
-          {loading ? 'Đang chuyển hướng...' : 'Đăng nhập bằng Google'}
+          {loading ? 'Đang đăng nhập...' : 'Đăng nhập bằng Google'}
         </button>
+        {error && <p className="text-center text-xs text-red-500">{error}</p>}
         <p className="text-center text-xs text-gray-400">Không cần tạo tài khoản mới</p>
       </div>
     </div>
