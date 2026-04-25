@@ -13,19 +13,20 @@ export function useRoom() {
 
   useEffect(() => {
     if (!user) { setLoading(false); return }
+    let unsubMembers: (() => void) | undefined
     const q = query(roomsCol(), where(`memberIds.${user.uid}`, '==', true))
     const unsub = onSnapshot(q, snap => {
+      unsubMembers?.()
       if (snap.empty) { setRoom(null); setLoading(false); return }
       const docSnap = snap.docs[0]
       const data = docSnap.data()
       setRoom({ id: docSnap.id, name: data.name, createdAt: data.createdAt?.toDate(), inviteCode: data.inviteCode })
-      const unsubMembers = onSnapshot(membersCol(docSnap.id), mSnap => {
+      unsubMembers = onSnapshot(membersCol(docSnap.id), mSnap => {
         setMembers(mSnap.docs.map(d => ({ id: d.id, ...d.data() } as Member)))
         setLoading(false)
       })
-      return unsubMembers
     })
-    return unsub
+    return () => { unsub(); unsubMembers?.() }
   }, [user])
 
   return { room, members, loading }

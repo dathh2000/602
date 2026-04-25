@@ -19,5 +19,8 @@ export async function exchangeZaloCode(code: string): Promise<{ access_token: st
   const userRes = await fetch(`https://graph.zalo.me/v2.0/me?fields=id,name,picture`, {
     headers: { access_token: token.access_token },
   })
-  return userRes.json()
+  if (!userRes.ok) throw new Error('Zalo user info fetch failed')
+  const zaloUser = await userRes.json()
+  if (!zaloUser.id) throw new Error('Zalo user info missing id')
+  return zaloUser
 }

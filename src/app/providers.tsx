@@ -13,9 +13,9 @@ function TokenHandler() {
   useEffect(() => {
     const token = params.get('token')
     if (token) {
-      signInWithToken(token).then(() => router.replace('/'))
+      signInWithToken(token).then(() => router.replace('/')).catch(console.error)
     }
-  }, [])
+  }, [params, signInWithToken, router])
 
   return null
 }
