@@ -5,29 +5,14 @@ interface Props {
   onUploaded: (url: string | null) => void
 }
 
-async function uploadToCloudinary(file: File): Promise<string> {
-  // Lấy signature từ server (API secret không bao giờ ra client)
-  const signRes = await fetch('/api/cloudinary', { method: 'POST' })
-  if (!signRes.ok) throw new Error('Không thể ký upload')
-  const { signature, timestamp, apiKey, cloudName, folder } = await signRes.json()
-
+async function uploadImage(file: File): Promise<string> {
   const formData = new FormData()
   formData.append('file', file)
-  formData.append('signature', signature)
-  formData.append('timestamp', String(timestamp))
-  formData.append('api_key', apiKey)
-  formData.append('folder', folder)
 
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-    method: 'POST',
-    body: formData,
-  })
-  if (!res.ok) {
-    const err = await res.json()
-    throw new Error(err.error?.message ?? 'Upload thất bại')
-  }
+  const res = await fetch('/api/cloudinary', { method: 'POST', body: formData })
   const data = await res.json()
-  return data.secure_url as string
+  if (!res.ok) throw new Error(data.error ?? 'Upload thất bại')
+  return data.url as string
 }
 
 export function ImageUpload({ onUploaded }: Props) {
@@ -42,7 +27,7 @@ export function ImageUpload({ onUploaded }: Props) {
     setPreview(URL.createObjectURL(file))
     setUploading(true)
     try {
-      const url = await uploadToCloudinary(file)
+      const url = await uploadImage(file)
       onUploaded(url)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload thất bại')
