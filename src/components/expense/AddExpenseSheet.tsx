@@ -7,7 +7,7 @@ import { expensesCol, fundDoc, fundTxCol, billPaymentsCol, billDoc } from '@/src
 import { BottomSheet } from '@/src/components/ui/BottomSheet'
 import { Avatar } from '@/src/components/ui/Avatar'
 import { ImageUpload } from '@/src/components/ui/ImageUpload'
-import { formatVND, formatAmountInput, parseAmountInput } from '@/src/lib/utils'
+import { formatVND, formatAmountInput, parseAmountInput, currentYearMonth } from '@/src/lib/utils'
 import type { Member, ExpenseCategory, Bill } from '@/src/types'
 import toast from 'react-hot-toast'
 
@@ -173,11 +173,11 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
         </>
       )}
 
-      {bills && bills.length > 0 && (
+      {bills && bills.filter(b => b.lastPaidMonth !== currentYearMonth()).length > 0 && (
         <>
           <label className="text-xs text-amber-700 font-semibold mb-2 block">GẮN VỚI HÓA ĐƠN (tuỳ chọn)</label>
           <div className="flex flex-wrap gap-2 mb-3">
-            {bills.map(b => (
+            {bills.filter(b => b.lastPaidMonth !== currentYearMonth()).map(b => (
               <button key={b.id} onClick={() => handleSelectBill(b)}
                 className={`text-xs px-3 py-1.5 rounded-xl border-2 font-semibold transition-colors ${
                   selectedBillId === b.id
