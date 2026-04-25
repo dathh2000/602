@@ -23,12 +23,15 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="vi">
+    <html lang="vi" style={{ height: '100%' }}>
       <head>
         <meta name="zalo-platform-site-verification" content="JVIt8AlzE2rrxxTpZDqNHLdGW4-rfbKLCJ8s" />
       </head>
-      <body className={`${inter.className} bg-amber-50`} style={{ paddingBottom: 'calc(4.5rem + env(safe-area-inset-bottom))' }}>
-        <Providers>{children}</Providers>
+      <body className={`${inter.className} bg-amber-50`}
+        style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' as const }}>
+          <Providers>{children}</Providers>
+        </div>
         <BottomNav />
       </body>
     </html>
