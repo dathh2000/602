@@ -57,7 +57,7 @@ export default function DashboardPage() {
 
   return (
     <main className="p-4 space-y-4">
-      <div className="bg-gradient-to-r from-amber-400 to-red-500 rounded-2xl p-4 text-white flex justify-between items-center">
+      <div className="sticky top-0 z-30 bg-gradient-to-r from-amber-400 to-red-500 rounded-2xl p-4 text-white flex justify-between items-center">
         <div>
           <p className="text-xs opacity-80">🏠 {room.name}</p>
           <p className="font-bold text-lg">{members.length} thành viên</p>
