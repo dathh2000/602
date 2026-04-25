@@ -5,6 +5,7 @@ import { db } from '@/src/lib/firebase/config'
 import { expensesCol, fundDoc, fundTxCol } from '@/src/lib/firebase/collections'
 import { BottomSheet } from '@/src/components/ui/BottomSheet'
 import { Avatar } from '@/src/components/ui/Avatar'
+import { ImageUpload } from '@/src/components/ui/ImageUpload'
 import { formatVND, formatAmountInput, parseAmountInput } from '@/src/lib/utils'
 import type { Member, ExpenseCategory } from '@/src/types'
 import toast from 'react-hot-toast'
@@ -24,6 +25,7 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
   const [paidBy, setPaidBy] = useState(currentUserId)
   const [participants, setParticipants] = useState<string[]>(members.map(m => m.id))
   const [useFund, setUseFund] = useState(false)
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   const amountNum = parseAmountInput(amount)
@@ -34,7 +36,7 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
   }
 
   function handleClose() {
-    setTitle(''); setAmount(''); setUseFund(false)
+    setTitle(''); setAmount(''); setUseFund(false); setImageUrl(null)
     setParticipants(members.map(m => m.id))
     setPaidBy(currentUserId)
     onClose()
@@ -64,6 +66,7 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
         createdAt: serverTimestamp(),
         paidFromFund: useFund,
         settlements,
+        ...(imageUrl ? { imageUrl } : {}),
       })
 
       if (useFund) {
@@ -146,6 +149,11 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
           </div>
         </>
       )}
+
+      <label className="text-xs text-amber-700 font-semibold mb-2 block">ẢNH ĐÍNH KÈM (tuỳ chọn)</label>
+      <div className="mb-3">
+        <ImageUpload onUploaded={setImageUrl} storagePath={`rooms/${roomId}/expenses/exp`} />
+      </div>
 
       <button onClick={handleSave} disabled={saving}
         className="w-full bg-gradient-to-r from-amber-400 to-red-500 text-white rounded-xl py-3 font-bold text-sm disabled:opacity-50">

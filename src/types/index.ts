@@ -27,6 +27,7 @@ export interface Expense {
   paidFromFund: boolean
   createdAt: Date
   settlements: Record<string, Settlement>
+  imageUrl?: string
 }
 
 export interface Bill {
@@ -37,6 +38,7 @@ export interface Bill {
   category: BillCategory
   notifyDaysBefore: number
   active: boolean
+  imageUrl?: string
 }
 
 export interface BillPayment {

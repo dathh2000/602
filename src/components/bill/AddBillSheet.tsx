@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { addDoc, serverTimestamp } from 'firebase/firestore'
 import { billsCol } from '@/src/lib/firebase/collections'
 import { BottomSheet } from '@/src/components/ui/BottomSheet'
+import { ImageUpload } from '@/src/components/ui/ImageUpload'
 import { formatAmountInput, parseAmountInput } from '@/src/lib/utils'
 import type { BillCategory } from '@/src/types'
 import toast from 'react-hot-toast'
@@ -15,10 +16,11 @@ export function AddBillSheet({ open, onClose, roomId }: Props) {
   const [dueDay, setDueDay] = useState('1')
   const [category, setCategory] = useState<BillCategory>('other')
   const [notifyDaysBefore, setNotifyDaysBefore] = useState('3')
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   function handleClose() {
-    setTitle(''); setAmount('')
+    setTitle(''); setAmount(''); setImageUrl(null)
     onClose()
   }
 
@@ -37,6 +39,7 @@ export function AddBillSheet({ open, onClose, roomId }: Props) {
         notifyDaysBefore: parseInt(notifyDaysBefore),
         active: true,
         createdAt: serverTimestamp(),
+        ...(imageUrl ? { imageUrl } : {}),
       })
       toast.success('Đã thêm hóa đơn!')
       handleClose()
@@ -81,7 +84,12 @@ export function AddBillSheet({ open, onClose, roomId }: Props) {
       <label className="text-xs text-amber-700 font-semibold">NHẮC TRƯỚC (ngày)</label>
       <input value={notifyDaysBefore} onChange={e => setNotifyDaysBefore(e.target.value)}
         type="number" min="1" max="14"
-        className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm bg-yellow-50 mt-1 mb-4" />
+        className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm bg-yellow-50 mt-1 mb-3" />
+
+      <label className="text-xs text-amber-700 font-semibold mb-2 block">ẢNH HÓA ĐƠN (tuỳ chọn)</label>
+      <div className="mb-4">
+        <ImageUpload onUploaded={setImageUrl} storagePath={`rooms/${roomId}/bills/bill`} />
+      </div>
 
       <button onClick={handleSave} disabled={saving}
         className="w-full bg-gradient-to-r from-amber-400 to-red-500 text-white rounded-xl py-3 font-bold text-sm disabled:opacity-50">
