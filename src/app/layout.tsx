@@ -13,14 +13,14 @@ export const metadata: Metadata = {
   icons: {
     apple: '/icons/icon-192.png',
   },
-  other: {
-    'zalo-platform-site-verification': 'JVIt8AlzE2rrxxTpZDqNHLdGW4-rfbKLCJ8s',
-  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi">
+      <head>
+        <meta name="zalo-platform-site-verification" content="JVIt8AlzE2rrxxTpZDqNHLdGW4-rfbKLCJ8s" />
+      </head>
       <body className={`${inter.className} bg-amber-50 pb-20`}>
         <Providers>{children}</Providers>
         <BottomNav />
