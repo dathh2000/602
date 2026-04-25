@@ -122,6 +122,7 @@ export default function DashboardPage() {
           members={members}
           currentUserId={user.uid}
           fundBalance={fund.balance}
+          bills={bills}
         />
       )}
       {room && user && selectedExpense && (

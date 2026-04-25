@@ -12,7 +12,7 @@ import type { FundTxType } from '@/src/types'
 
 export default function FundPage() {
   const { user } = useAuth()
-  const { room, members, loading, isAdmin } = useRoom()
+  const { room, members, loading } = useRoom()
   const { fund, transactions } = useFund(room?.id)
   const [sheet, setSheet] = useState<FundTxType | null>(null)
 
@@ -22,13 +22,12 @@ export default function FundPage() {
     <main className="p-4 space-y-4">
       <FundBalance
         balance={fund.balance}
-        isAdmin={isAdmin}
         onDeposit={() => setSheet('deposit')}
         onWithdraw={() => setSheet('withdraw')}
       />
       <ContributionList members={members} transactions={transactions} />
       <TransactionHistory transactions={transactions} members={members} />
-      {room && user && sheet && isAdmin && (
+      {room && user && sheet && (
         <FundSheet
           open={true}
           onClose={() => setSheet(null)}

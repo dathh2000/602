@@ -1,13 +1,14 @@
 'use client'
 import { useState } from 'react'
 import { addDoc, serverTimestamp, writeBatch, doc as fsDoc, increment } from 'firebase/firestore'
+import { format } from 'date-fns'
 import { db } from '@/src/lib/firebase/config'
-import { expensesCol, fundDoc, fundTxCol } from '@/src/lib/firebase/collections'
+import { expensesCol, fundDoc, fundTxCol, billPaymentsCol } from '@/src/lib/firebase/collections'
 import { BottomSheet } from '@/src/components/ui/BottomSheet'
 import { Avatar } from '@/src/components/ui/Avatar'
 import { ImageUpload } from '@/src/components/ui/ImageUpload'
 import { formatVND, formatAmountInput, parseAmountInput } from '@/src/lib/utils'
-import type { Member, ExpenseCategory } from '@/src/types'
+import type { Member, ExpenseCategory, Bill } from '@/src/types'
 import toast from 'react-hot-toast'
 
 interface Props {
@@ -17,15 +18,17 @@ interface Props {
   members: Member[]
   currentUserId: string
   fundBalance: number
+  bills?: Bill[]
 }
 
-export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId, fundBalance }: Props) {
+export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId, fundBalance, bills }: Props) {
   const [title, setTitle] = useState('')
   const [amount, setAmount] = useState('')
   const [paidBy, setPaidBy] = useState(currentUserId)
   const [participants, setParticipants] = useState<string[]>(members.map(m => m.id))
   const [useFund, setUseFund] = useState(false)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [selectedBillId, setSelectedBillId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   const amountNum = parseAmountInput(amount)
@@ -35,8 +38,18 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
     setParticipants(prev => prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid])
   }
 
+  function handleSelectBill(bill: Bill) {
+    if (selectedBillId === bill.id) {
+      setSelectedBillId(null)
+      return
+    }
+    setSelectedBillId(bill.id)
+    if (!title.trim()) setTitle(bill.title)
+    setAmount(formatAmountInput(String(bill.amount)))
+  }
+
   function handleClose() {
-    setTitle(''); setAmount(''); setUseFund(false); setImageUrl(null)
+    setTitle(''); setAmount(''); setUseFund(false); setImageUrl(null); setSelectedBillId(null)
     setParticipants(members.map(m => m.id))
     setPaidBy(currentUserId)
     onClose()
@@ -87,6 +100,13 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ roomId, expenseTitle: title.trim(), amount: amountNum, paidBy, participants }),
         }).catch(() => {})
+      }
+
+      if (selectedBillId) {
+        const month = format(new Date(), 'yyyy-MM')
+        await addDoc(billPaymentsCol(roomId, selectedBillId), {
+          paid: true, paidAt: serverTimestamp(), paidBy: currentUserId, month,
+        })
       }
 
       toast.success('Đã lưu chi tiêu!')
@@ -146,6 +166,24 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
                 </button>
               )
             })}
+          </div>
+        </>
+      )}
+
+      {bills && bills.length > 0 && (
+        <>
+          <label className="text-xs text-amber-700 font-semibold mb-2 block">GẮN VỚI HÓA ĐƠN (tuỳ chọn)</label>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {bills.map(b => (
+              <button key={b.id} onClick={() => handleSelectBill(b)}
+                className={`text-xs px-3 py-1.5 rounded-xl border-2 font-semibold transition-colors ${
+                  selectedBillId === b.id
+                    ? 'bg-amber-100 border-amber-400 text-amber-800'
+                    : 'border-gray-200 text-gray-500 bg-white'
+                }`}>
+                {b.title} · {formatVND(b.amount)}
+              </button>
+            ))}
           </div>
         </>
       )}
