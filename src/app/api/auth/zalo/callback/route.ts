@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { exchangeZaloCode } from '@/src/lib/zalo/oauth'
 import { adminAuth, adminDb } from '@/src/lib/firebase/admin'
 
+export const preferredRegion = 'sin1' // Singapore — Zalo blocks non-VN IPs on graph.zalo.me
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const code = searchParams.get('code')
