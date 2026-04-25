@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const PUBLIC_PATHS = ['/login', '/api/auth/zalo']
+const PUBLIC_PATHS = ['/login', '/api/auth/zalo', '/zalo_verifier']
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
