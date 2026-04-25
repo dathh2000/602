@@ -39,6 +39,7 @@ export interface Bill {
 }
 
 export interface BillPayment {
+  id: string
   paid: boolean
   paidAt: Date | null
   paidBy: string | null
