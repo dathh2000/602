@@ -1,27 +1,44 @@
 'use client'
 import { useRef, useState } from 'react'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { storage } from '@/src/lib/firebase/config'
 
 interface Props {
   onUploaded: (url: string | null) => void
-  storagePath: string // e.g. rooms/roomId/expenses/expenseId
 }
 
-export function ImageUpload({ onUploaded, storagePath }: Props) {
+async function uploadToCloudinary(file: File): Promise<string> {
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+  if (!cloudName || !uploadPreset) throw new Error('Cloudinary chưa cấu hình')
+
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('upload_preset', uploadPreset)
+
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    method: 'POST',
+    body: formData,
+  })
+  if (!res.ok) throw new Error('Upload thất bại')
+  const data = await res.json()
+  return data.secure_url as string
+}
+
+export function ImageUpload({ onUploaded }: Props) {
   const [preview, setPreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [error, setError] = useState('')
+  const galleryRef = useRef<HTMLInputElement>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
 
   async function handleFile(file: File) {
+    setError('')
     setPreview(URL.createObjectURL(file))
     setUploading(true)
     try {
-      const storageRef = ref(storage, `${storagePath}_${Date.now()}`)
-      await uploadBytes(storageRef, file, { contentType: file.type })
-      const url = await getDownloadURL(storageRef)
+      const url = await uploadToCloudinary(file)
       onUploaded(url)
     } catch {
+      setError('Upload thất bại, thử lại')
       setPreview(null)
       onUploaded(null)
     } finally {
@@ -36,8 +53,10 @@ export function ImageUpload({ onUploaded, storagePath }: Props) {
 
   function handleRemove() {
     setPreview(null)
+    setError('')
     onUploaded(null)
-    if (inputRef.current) inputRef.current.value = ''
+    if (galleryRef.current) galleryRef.current.value = ''
+    if (cameraRef.current) cameraRef.current.value = ''
   }
 
   if (preview) {
@@ -46,7 +65,7 @@ export function ImageUpload({ onUploaded, storagePath }: Props) {
         <img src={preview} alt="preview" className="w-full max-h-48 object-cover" />
         {uploading && (
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <span className="text-white text-xs font-bold">Đang tải lên...</span>
+            <span className="text-white text-xs font-bold animate-pulse">Đang tải lên...</span>
           </div>
         )}
         {!uploading && (
@@ -60,17 +79,20 @@ export function ImageUpload({ onUploaded, storagePath }: Props) {
   }
 
   return (
-    <div className="flex gap-2">
-      <input ref={inputRef} type="file" accept="image/*" onChange={handleChange} className="hidden" id={`img-${storagePath}`} />
-      <label htmlFor={`img-${storagePath}`}
-        className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-amber-300 rounded-xl py-3 text-amber-600 text-xs font-semibold cursor-pointer active:bg-amber-50">
-        🖼️ Chọn từ thư viện
-      </label>
-      <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={handleChange} className="hidden" id={`cam-${storagePath}`} />
-      <label htmlFor={`cam-${storagePath}`}
-        className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-amber-300 rounded-xl py-3 text-amber-600 text-xs font-semibold cursor-pointer active:bg-amber-50">
-        📷 Chụp ảnh
-      </label>
+    <div className="space-y-1">
+      <div className="flex gap-2">
+        <input ref={galleryRef} type="file" accept="image/*" onChange={handleChange} className="hidden" id="img-gallery" />
+        <label htmlFor="img-gallery"
+          className="flex-1 flex items-center justify-center gap-1 border-2 border-dashed border-amber-300 rounded-xl py-3 text-amber-600 text-xs font-semibold cursor-pointer active:bg-amber-50">
+          🖼️ Thư viện
+        </label>
+        <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleChange} className="hidden" id="img-camera" />
+        <label htmlFor="img-camera"
+          className="flex-1 flex items-center justify-center gap-1 border-2 border-dashed border-amber-300 rounded-xl py-3 text-amber-600 text-xs font-semibold cursor-pointer active:bg-amber-50">
+          📷 Chụp ảnh
+        </label>
+      </div>
+      {error && <p className="text-xs text-red-500 text-center">{error}</p>}
     </div>
   )
 }

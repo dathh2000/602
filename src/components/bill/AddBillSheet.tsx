@@ -88,7 +88,7 @@ export function AddBillSheet({ open, onClose, roomId }: Props) {
 
       <label className="text-xs text-amber-700 font-semibold mb-2 block">ẢNH HÓA ĐƠN (tuỳ chọn)</label>
       <div className="mb-4">
-        <ImageUpload onUploaded={setImageUrl} storagePath={`rooms/${roomId}/bills/bill`} />
+        <ImageUpload onUploaded={setImageUrl} />
       </div>
 
       <button onClick={handleSave} disabled={saving}

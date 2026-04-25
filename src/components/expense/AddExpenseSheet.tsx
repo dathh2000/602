@@ -152,7 +152,7 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
 
       <label className="text-xs text-amber-700 font-semibold mb-2 block">ẢNH ĐÍNH KÈM (tuỳ chọn)</label>
       <div className="mb-3">
-        <ImageUpload onUploaded={setImageUrl} storagePath={`rooms/${roomId}/expenses/exp`} />
+        <ImageUpload onUploaded={setImageUrl} />
       </div>
 
       <button onClick={handleSave} disabled={saving}
