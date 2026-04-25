@@ -29,7 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`${inter.className} bg-amber-50`}
         style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' as const }}>
+        <div id="scroll-root" style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' as const }}>
           <Providers>{children}</Providers>
         </div>
         <BottomNav />
