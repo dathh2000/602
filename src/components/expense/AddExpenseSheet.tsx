@@ -5,7 +5,7 @@ import { db } from '@/src/lib/firebase/config'
 import { expensesCol, fundDoc, fundTxCol } from '@/src/lib/firebase/collections'
 import { BottomSheet } from '@/src/components/ui/BottomSheet'
 import { Avatar } from '@/src/components/ui/Avatar'
-import { formatVND } from '@/src/lib/utils'
+import { formatVND, formatAmountInput, parseAmountInput } from '@/src/lib/utils'
 import type { Member, ExpenseCategory } from '@/src/types'
 import toast from 'react-hot-toast'
 
@@ -26,7 +26,7 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
   const [useFund, setUseFund] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  const amountNum = parseFloat(amount.replace(/[^0-9.]/g, '')) || 0
+  const amountNum = parseAmountInput(amount)
   const share = participants.length > 0 ? amountNum / participants.length : 0
 
   function toggleParticipant(uid: string) {
@@ -104,7 +104,7 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
         className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm bg-yellow-50 mt-1 mb-3" />
 
       <label className="text-xs text-amber-700 font-semibold">SỐ TIỀN (₫)</label>
-      <input value={amount} onChange={e => setAmount(e.target.value)} placeholder="90000" inputMode="numeric"
+      <input value={amount} onChange={e => setAmount(formatAmountInput(e.target.value))} placeholder="90.000" inputMode="numeric"
         className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm bg-yellow-50 mt-1 mb-3 font-bold text-red-500" />
 
       <label className="text-xs text-amber-700 font-semibold">NGƯỜI CHI</label>

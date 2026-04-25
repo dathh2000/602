@@ -6,12 +6,13 @@ import { useAuth } from './useAuth'
 import type { Room, Member } from '@/src/types'
 
 export function useRoom() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [room, setRoom] = useState<Room | null>(null)
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (authLoading) return // auth chưa xong, chờ
     if (!user) { setLoading(false); return }
     let unsubMembers: (() => void) | undefined
     const q = query(roomsCol(), where(`memberIds.${user.uid}`, '==', true))
@@ -27,7 +28,7 @@ export function useRoom() {
       })
     })
     return () => { unsub(); unsubMembers?.() }
-  }, [user])
+  }, [user, authLoading])
 
   const isAdmin = user ? (members.find(m => m.id === user.uid)?.role === 'admin') : false
   return { room, members, loading, isAdmin }

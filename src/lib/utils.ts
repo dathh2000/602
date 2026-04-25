@@ -11,6 +11,16 @@ export function generateInviteCode(): string {
   return nanoid()
 }
 
+export function formatAmountInput(value: string): string {
+  const digits = value.replace(/\D/g, '')
+  if (!digits) return ''
+  return parseInt(digits, 10).toLocaleString('vi-VN')
+}
+
+export function parseAmountInput(value: string): number {
+  return parseInt(value.replace(/\./g, ''), 10) || 0
+}
+
 export function daysUntilDue(dueDay: number): number {
   const now = new Date()
   const due = new Date(now.getFullYear(), now.getMonth(), dueDay)

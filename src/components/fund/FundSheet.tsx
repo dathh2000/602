@@ -4,7 +4,7 @@ import { writeBatch, doc as fsDoc, serverTimestamp, increment } from 'firebase/f
 import { db } from '@/src/lib/firebase/config'
 import { fundDoc, fundTxCol } from '@/src/lib/firebase/collections'
 import { BottomSheet } from '@/src/components/ui/BottomSheet'
-import { formatVND } from '@/src/lib/utils'
+import { formatVND, formatAmountInput, parseAmountInput } from '@/src/lib/utils'
 import type { FundTxType } from '@/src/types'
 import toast from 'react-hot-toast'
 
@@ -27,7 +27,7 @@ export function FundSheet({ open, onClose, roomId, currentUserId, currentBalance
     setType(defaultType)
   }, [defaultType])
 
-  const amountNum = parseFloat(amount.replace(/[^0-9.]/g, '')) || 0
+  const amountNum = parseAmountInput(amount)
   const preview = type === 'deposit' ? currentBalance + amountNum : currentBalance - amountNum
 
   function handleClose() {
@@ -72,8 +72,8 @@ export function FundSheet({ open, onClose, roomId, currentUserId, currentBalance
       </div>
 
       <label className="text-xs text-amber-700 font-semibold">SỐ TIỀN (₫)</label>
-      <input value={amount} onChange={e => setAmount(e.target.value)} inputMode="numeric"
-        placeholder="200000"
+      <input value={amount} onChange={e => setAmount(formatAmountInput(e.target.value))} inputMode="numeric"
+        placeholder="200.000"
         className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm bg-yellow-50 mt-1 mb-3 font-bold text-green-600" />
 
       <label className="text-xs text-amber-700 font-semibold">GHI CHÚ</label>

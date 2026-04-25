@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { addDoc, serverTimestamp } from 'firebase/firestore'
 import { billsCol } from '@/src/lib/firebase/collections'
 import { BottomSheet } from '@/src/components/ui/BottomSheet'
+import { formatAmountInput, parseAmountInput } from '@/src/lib/utils'
 import type { BillCategory } from '@/src/types'
 import toast from 'react-hot-toast'
 
@@ -22,7 +23,7 @@ export function AddBillSheet({ open, onClose, roomId }: Props) {
   }
 
   async function handleSave() {
-    const amt = parseFloat(amount.replace(/[^0-9.]/g, ''))
+    const amt = parseAmountInput(amount)
     if (!title.trim() || !amt) { toast.error('Nhập đủ thông tin'); return }
     const day = parseInt(dueDay)
     if (day < 1 || day > 31) { toast.error('Ngày không hợp lệ (1-31)'); return }
@@ -57,7 +58,7 @@ export function AddBillSheet({ open, onClose, roomId }: Props) {
       <div className="grid grid-cols-2 gap-2 mb-3">
         <div>
           <label className="text-xs text-amber-700 font-semibold">SỐ TIỀN (₫)</label>
-          <input value={amount} onChange={e => setAmount(e.target.value)} placeholder="450000" inputMode="numeric"
+          <input value={amount} onChange={e => setAmount(formatAmountInput(e.target.value))} placeholder="450.000" inputMode="numeric"
             className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm bg-yellow-50 mt-1" />
         </div>
         <div>
