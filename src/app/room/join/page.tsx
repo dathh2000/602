@@ -23,7 +23,7 @@ export default function JoinRoomPage() {
       await setDoc(doc(membersCol(roomId), user.uid), {
         displayName: user.displayName ?? 'Thành viên',
         avatarUrl: user.photoURL ?? '',
-        zaloId: user.uid.replace('zalo_', ''),
+        zaloId: '',
         role: 'member',
       })
       await updateDoc(snap.docs[0].ref, { [`memberIds.${user.uid}`]: true })

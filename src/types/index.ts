@@ -3,7 +3,7 @@ export interface Member {
   id: string
   displayName: string
   avatarUrl: string
-  zaloId: string
+  zaloId?: string
   role: 'admin' | 'member'
 }
 

@@ -27,7 +27,7 @@ export default function CreateRoomPage() {
       await setDoc(doc(membersCol(roomRef.id), user.uid), {
         displayName: user.displayName ?? 'Thành viên',
         avatarUrl: user.photoURL ?? '',
-        zaloId: user.uid.replace('zalo_', ''),
+        zaloId: '',
         role: 'admin',
       })
       router.push('/')
