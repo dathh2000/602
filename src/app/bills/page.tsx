@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { addDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { format } from 'date-fns'
 import { billPaymentsCol, billDoc } from '@/src/lib/firebase/collections'
+import { currentYearMonth } from '@/src/lib/utils'
 import { useRoom } from '@/src/hooks/useRoom'
 import { useBills } from '@/src/hooks/useBills'
 import { useAuth } from '@/src/hooks/useAuth'
@@ -62,7 +63,7 @@ export default function BillsPage() {
       ) : (
         <div className="space-y-2">
           {bills.map(b => (
-            <BillCard key={b.id} bill={b} onMarkPaid={() => markPaid(b.id)} isPending={pendingBills.has(b.id)} />
+            <BillCard key={b.id} bill={b} onMarkPaid={() => markPaid(b.id)} isPending={pendingBills.has(b.id)} isPaid={b.lastPaidMonth === currentYearMonth()} />
           ))}
         </div>
       )}

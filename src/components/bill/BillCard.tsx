@@ -6,9 +6,9 @@ const BILL_ICONS: Record<string, string> = {
   rent: '🏠', electric: '💡', water: '🚰', internet: '📶', other: '📌'
 }
 
-interface Props { bill: Bill; onMarkPaid: () => void; isPending?: boolean }
+interface Props { bill: Bill; onMarkPaid: () => void; isPending?: boolean; isPaid?: boolean }
 
-export function BillCard({ bill, onMarkPaid, isPending }: Props) {
+export function BillCard({ bill, onMarkPaid, isPending, isPaid }: Props) {
   const days = daysUntilDue(bill.dueDay)
   const urgent = days <= 3
   return (
@@ -25,8 +25,16 @@ export function BillCard({ bill, onMarkPaid, isPending }: Props) {
         <p className="font-bold text-sm">{formatVND(bill.amount)}</p>
         <Tag label={urgent ? `⏰ ${days} ngày` : `${days} ngày`} variant={urgent ? 'red' : 'yellow'} />
       </div>
-      <button onClick={onMarkPaid} disabled={isPending}
-        className="ml-1 bg-green-100 text-green-700 text-xs font-bold px-2 py-2 rounded-lg disabled:opacity-50">✓</button>
+      {isPaid ? (
+        <div className="ml-1 w-9 h-9 flex items-center justify-center rounded-lg bg-green-100 text-green-600 text-base">
+          ✓
+        </div>
+      ) : (
+        <button onClick={onMarkPaid} disabled={isPending}
+          className="ml-1 w-9 h-9 flex items-center justify-center rounded-lg border-2 border-dashed border-gray-300 text-gray-300 text-lg disabled:opacity-50 hover:border-green-400 hover:text-green-400 transition-colors">
+          ○
+        </button>
+      )}
     </div>
   )
 }
