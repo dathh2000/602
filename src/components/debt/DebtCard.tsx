@@ -50,12 +50,18 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
   return (
     <div className="bg-white rounded-xl p-3 shadow-sm">
       <div className="flex items-center gap-2 mb-2">
-        <Avatar name={fromMember?.displayName ?? '?'} index={fromIndex} size="md" />
+        <div className="flex flex-col items-center gap-0.5">
+          <Avatar name={fromMember?.displayName ?? '?'} index={fromIndex} size="md" />
+          <span className="text-xs font-semibold text-gray-700 max-w-[60px] truncate">{fromMember?.displayName ?? '?'}</span>
+        </div>
         <span className="text-xs text-gray-400 flex-1 text-center">→ nợ →</span>
-        <Avatar name={toMember?.displayName ?? '?'}  index={toIndex}   size="md" />
+        <div className="flex flex-col items-center gap-0.5">
+          <Avatar name={toMember?.displayName ?? '?'} index={toIndex} size="md" />
+          <span className="text-xs font-semibold text-gray-700 max-w-[60px] truncate">{toMember?.displayName ?? '?'}</span>
+        </div>
         {relatedExpenses.length > 0 && (
           <button onClick={handleSettle} disabled={settling}
-            className="ml-auto bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-lg disabled:opacity-50">
+            className="ml-2 bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-lg disabled:opacity-50 shrink-0">
             {settling ? '...' : '✓ Đã trả'}
           </button>
         )}
