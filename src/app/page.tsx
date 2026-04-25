@@ -8,6 +8,7 @@ import { useDebts } from '@/src/hooks/useDebts'
 import { useFund } from '@/src/hooks/useFund'
 import { useAuth } from '@/src/hooks/useAuth'
 import { AddExpenseSheet } from '@/src/components/expense/AddExpenseSheet'
+import { ExpenseDetailSheet } from '@/src/components/expense/ExpenseDetailSheet'
 import { ExpenseCard } from '@/src/components/expense/ExpenseCard'
 import { FAB } from '@/src/components/layout/FAB'
 import { Tag } from '@/src/components/ui/Tag'
@@ -23,6 +24,7 @@ export default function DashboardPage() {
   const debts = useDebts(expenses, members)
   const { fund } = useFund(room?.id)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [selectedExpense, setSelectedExpense] = useState<typeof expenses[0] | null>(null)
 
   if (loading) return <LoadingScreen />
 
@@ -103,7 +105,7 @@ export default function DashboardPage() {
         <p className="text-xs text-amber-700 font-bold uppercase mb-2">Chi tiêu gần đây</p>
         <div className="space-y-2">
           {expenses.slice(0, 5).map(e => (
-            <ExpenseCard key={e.id} expense={e} members={members} />
+            <ExpenseCard key={e.id} expense={e} members={members} onClick={() => setSelectedExpense(e)} />
           ))}
           {expenses.length === 0 && (
             <p className="text-center text-gray-400 text-sm py-4">Chưa có chi tiêu nào · Nhấn + để thêm</p>
@@ -120,6 +122,16 @@ export default function DashboardPage() {
           members={members}
           currentUserId={user.uid}
           fundBalance={fund.balance}
+        />
+      )}
+      {room && user && selectedExpense && (
+        <ExpenseDetailSheet
+          open={true}
+          onClose={() => setSelectedExpense(null)}
+          expense={selectedExpense}
+          members={members}
+          roomId={room.id}
+          currentUserId={user.uid}
         />
       )}
     </main>
