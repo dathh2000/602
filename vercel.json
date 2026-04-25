@@ -1,7 +1,3 @@
 {
-  "crons": [{ "path": "/api/notifications/bills", "schedule": "0 1 * * *" }],
-  "functions": {
-    "src/app/api/auth/zalo/callback/route.ts": { "regions": ["sin1"] },
-    "src/app/api/auth/zalo/login/route.ts": { "regions": ["sin1"] }
-  }
+  "crons": [{ "path": "/api/notifications/bills", "schedule": "0 1 * * *" }]
 }
