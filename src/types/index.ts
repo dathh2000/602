@@ -70,5 +70,4 @@ export interface DebtEdge {
   from: string  // userId người nợ
   to: string    // userId người được nợ
   amount: number
-  expenseIds: string[]
 }

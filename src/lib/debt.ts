@@ -31,7 +31,7 @@ export function simplifyDebts(
   while (i < debtors.length && j < creditors.length) {
     const amount = Math.min(-debtors[i].v, creditors[j].v)
     if (amount > 0.5) {
-      edges.push({ from: debtors[i].id, to: creditors[j].id, amount: Math.round(amount), expenseIds: [] })
+      edges.push({ from: debtors[i].id, to: creditors[j].id, amount: Math.round(amount) })
     }
     debtors[i].v += amount
     creditors[j].v -= amount

@@ -53,10 +53,12 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
         <Avatar name={fromMember?.displayName ?? '?'} index={fromIndex} size="md" />
         <span className="text-xs text-gray-400 flex-1 text-center">→ nợ →</span>
         <Avatar name={toMember?.displayName ?? '?'}  index={toIndex}   size="md" />
-        <button onClick={handleSettle} disabled={settling}
-          className="ml-auto bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-lg disabled:opacity-50">
-          {settling ? '...' : '✓ Đã trả'}
-        </button>
+        {relatedExpenses.length > 0 && (
+          <button onClick={handleSettle} disabled={settling}
+            className="ml-auto bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-lg disabled:opacity-50">
+            {settling ? '...' : '✓ Đã trả'}
+          </button>
+        )}
       </div>
       <div className="flex justify-between items-center">
         <button onClick={() => setExpanded(!expanded)} className="text-xs text-gray-400 underline">

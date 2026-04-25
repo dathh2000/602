@@ -11,6 +11,7 @@ const TABS = [
 
 export function BottomNav() {
   const pathname = usePathname()
+  if (pathname === '/login' || pathname.startsWith('/room/')) return null
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-amber-200 grid grid-cols-4 z-40">
       {TABS.map(t => (

@@ -21,6 +21,13 @@ export default function BillsPage() {
 
   if (loading) return <LoadingScreen />
 
+  if (!loading && !room) return (
+    <div className="flex flex-col items-center justify-center min-h-screen p-6 gap-4">
+      <p className="text-amber-800 font-bold">Bạn chưa có phòng nào</p>
+      <a href="/room/create" className="bg-gradient-to-r from-amber-400 to-red-500 text-white px-6 py-3 rounded-xl font-bold">Tạo phòng mới</a>
+    </div>
+  )
+
   async function markPaid(billId: string) {
     if (!room || !user) return
     if (pendingBills.has(billId)) return

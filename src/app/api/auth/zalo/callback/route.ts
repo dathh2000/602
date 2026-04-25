@@ -26,6 +26,12 @@ export async function GET(req: NextRequest) {
     const customToken = await adminAuth.createCustomToken(uid, { zaloId: zaloUser.uid })
     const response = NextResponse.redirect(`${process.env.NEXTAUTH_URL}/?token=${customToken}`)
     response.cookies.delete('zalo_state')
+    response.cookies.set('__session', uid, {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    })
     return response
   } catch {
     return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/login?error=auth_failed`)
