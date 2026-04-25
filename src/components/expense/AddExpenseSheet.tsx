@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
-import { addDoc, serverTimestamp, updateDoc, increment } from 'firebase/firestore'
+import { addDoc, serverTimestamp, writeBatch, doc as fsDoc, increment } from 'firebase/firestore'
+import { db } from '@/src/lib/firebase/config'
 import { expensesCol, fundDoc, fundTxCol } from '@/src/lib/firebase/collections'
 import { BottomSheet } from '@/src/components/ui/BottomSheet'
 import { Avatar } from '@/src/components/ui/Avatar'
@@ -66,15 +67,14 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
       })
 
       if (useFund) {
-        await updateDoc(fundDoc(roomId), { balance: increment(-amountNum) })
-        await addDoc(fundTxCol(roomId), {
-          type: 'withdraw',
-          amount: amountNum,
-          userId: currentUserId,
-          note: title.trim(),
-          relatedExpenseId: null,
-          createdAt: serverTimestamp(),
+        const batch = writeBatch(db)
+        const newFundTxRef = fsDoc(fundTxCol(roomId))
+        batch.update(fundDoc(roomId), { balance: increment(-amountNum) })
+        batch.set(newFundTxRef, {
+          type: 'withdraw', amount: amountNum, userId: currentUserId,
+          note: title.trim(), relatedExpenseId: null, createdAt: serverTimestamp(),
         })
+        await batch.commit()
       }
 
       // Notify participants via Zalo (fire-and-forget)

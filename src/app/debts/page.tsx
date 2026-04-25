@@ -13,6 +13,13 @@ export default function DebtsPage() {
 
   if (loading) return <LoadingScreen />
 
+  if (!room) return (
+    <div className="flex flex-col items-center justify-center min-h-screen p-6 gap-4">
+      <p className="text-amber-800 font-bold">Bạn chưa có phòng nào</p>
+      <a href="/room/create" className="bg-gradient-to-r from-amber-400 to-red-500 text-white px-6 py-3 rounded-xl font-bold">Tạo phòng mới</a>
+    </div>
+  )
+
   const settled = expenses.filter(e =>
     !e.paidFromFund && e.participants.length > 0 &&
     e.participants.every(p => e.settlements[p]?.paid)
@@ -31,7 +38,7 @@ export default function DebtsPage() {
         <div className="space-y-3">
           <p className="text-xs text-amber-700 font-bold uppercase">Cần thanh toán</p>
           {debts.map((d, i) => (
-            <DebtCard key={i} debt={d} members={members} expenses={expenses} roomId={room?.id ?? ''} />
+            <DebtCard key={`${d.from}-${d.to}`} debt={d} members={members} expenses={expenses} roomId={room.id} />
           ))}
         </div>
       )}

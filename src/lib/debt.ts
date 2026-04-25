@@ -13,6 +13,7 @@ export function simplifyDebts(
     const allSettled = exp.participants.every(p => exp.settlements[p]?.paid)
     if (allSettled) continue
 
+    if (exp.participants.length === 0) continue
     const share = exp.amount / exp.participants.length
     for (const p of exp.participants) {
       if (exp.settlements[p]?.paid) continue

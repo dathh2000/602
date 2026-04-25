@@ -1,6 +1,7 @@
 'use client'
-import { useState } from 'react'
-import { addDoc, serverTimestamp, updateDoc, increment } from 'firebase/firestore'
+import { useState, useEffect } from 'react'
+import { writeBatch, doc as fsDoc, serverTimestamp, increment } from 'firebase/firestore'
+import { db } from '@/src/lib/firebase/config'
 import { fundDoc, fundTxCol } from '@/src/lib/firebase/collections'
 import { BottomSheet } from '@/src/components/ui/BottomSheet'
 import { formatVND } from '@/src/lib/utils'
@@ -22,6 +23,10 @@ export function FundSheet({ open, onClose, roomId, currentUserId, currentBalance
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
 
+  useEffect(() => {
+    setType(defaultType)
+  }, [defaultType])
+
   const amountNum = parseFloat(amount.replace(/[^0-9.]/g, '')) || 0
   const preview = type === 'deposit' ? currentBalance + amountNum : currentBalance - amountNum
 
@@ -36,17 +41,16 @@ export function FundSheet({ open, onClose, roomId, currentUserId, currentBalance
     }
     setSaving(true)
     try {
-      await updateDoc(fundDoc(roomId), {
-        balance: increment(type === 'deposit' ? amountNum : -amountNum)
-      })
-      await addDoc(fundTxCol(roomId), {
-        type,
-        amount: amountNum,
-        userId: currentUserId,
+      const batch = writeBatch(db)
+      const delta = type === 'deposit' ? amountNum : -amountNum
+      batch.update(fundDoc(roomId), { balance: increment(delta) })
+      const newTxRef = fsDoc(fundTxCol(roomId))
+      batch.set(newTxRef, {
+        type, amount: amountNum, userId: currentUserId,
         note: note.trim() || (type === 'deposit' ? 'Nạp quỹ' : 'Rút quỹ'),
-        relatedExpenseId: null,
-        createdAt: serverTimestamp(),
+        relatedExpenseId: null, createdAt: serverTimestamp(),
       })
+      await batch.commit()
       toast.success(type === 'deposit' ? 'Đã nạp quỹ!' : 'Đã rút quỹ!')
       handleClose()
     } catch {

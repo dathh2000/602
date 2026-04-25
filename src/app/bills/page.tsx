@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { addDoc, serverTimestamp } from 'firebase/firestore'
+import { format } from 'date-fns'
 import { billPaymentsCol } from '@/src/lib/firebase/collections'
 import { useRoom } from '@/src/hooks/useRoom'
 import { useBills } from '@/src/hooks/useBills'
@@ -16,22 +17,22 @@ export default function BillsPage() {
   const { room, loading } = useRoom()
   const bills = useBills(room?.id)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [pendingBills, setPendingBills] = useState<Set<string>>(new Set())
 
   if (loading) return <LoadingScreen />
 
   async function markPaid(billId: string) {
     if (!room || !user) return
-    const month = new Date().toISOString().slice(0, 7) // YYYY-MM
+    if (pendingBills.has(billId)) return
+    setPendingBills(prev => new Set(prev).add(billId))
     try {
+      const month = format(new Date(), 'yyyy-MM')
       await addDoc(billPaymentsCol(room.id, billId), {
-        paid: true,
-        paidAt: serverTimestamp(),
-        paidBy: user.uid,
-        month,
+        paid: true, paidAt: serverTimestamp(), paidBy: user.uid, month,
       })
       toast.success('Đã đánh dấu đã đóng!')
-    } catch {
-      toast.error('Có lỗi xảy ra')
+    } finally {
+      setPendingBills(prev => { const s = new Set(prev); s.delete(billId); return s })
     }
   }
 
@@ -51,7 +52,7 @@ export default function BillsPage() {
       ) : (
         <div className="space-y-2">
           {bills.map(b => (
-            <BillCard key={b.id} bill={b} onMarkPaid={() => markPaid(b.id)} />
+            <BillCard key={b.id} bill={b} onMarkPaid={() => markPaid(b.id)} isPending={pendingBills.has(b.id)} />
           ))}
         </div>
       )}
