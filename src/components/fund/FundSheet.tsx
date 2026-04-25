@@ -61,7 +61,7 @@ export function FundSheet({ open, onClose, roomId, currentUserId, currentBalance
   }
 
   return (
-    <BottomSheet open={open} onClose={handleClose}>
+    <BottomSheet open={open} onClose={handleClose} title="💰 Quỹ nhóm">
       <div className="grid grid-cols-2 gap-1 bg-amber-100 rounded-xl p-1 mb-4">
         {(['deposit', 'withdraw'] as const).map(t => (
           <button key={t} onClick={() => setType(t)}

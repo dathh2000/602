@@ -51,8 +51,7 @@ export function AddBillSheet({ open, onClose, roomId }: Props) {
   }
 
   return (
-    <BottomSheet open={open} onClose={handleClose}>
-      <h2 className="text-sm font-extrabold text-amber-800 mb-3">📅 Thêm hóa đơn định kỳ</h2>
+    <BottomSheet open={open} onClose={handleClose} title="📅 Thêm hóa đơn định kỳ">
 
       <label className="text-xs text-amber-700 font-semibold">TÊN HÓA ĐƠN</label>
       <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Tiền điện, tiền nước..."

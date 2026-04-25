@@ -122,8 +122,7 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
   }
 
   return (
-    <BottomSheet open={open} onClose={handleClose}>
-      <h2 className="text-sm font-extrabold text-amber-800 mb-3">➕ Thêm chi tiêu</h2>
+    <BottomSheet open={open} onClose={handleClose} title="➕ Thêm chi tiêu">
 
       <label className="text-xs text-amber-700 font-semibold">MÔ TẢ</label>
       <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Đồ ăn tối, tiền điện..."

@@ -47,7 +47,7 @@ export function ExpenseDetailSheet({ open, onClose, expense, members, roomId, cu
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose}>
+    <BottomSheet open={open} onClose={onClose} title={`📋 ${expense.title}`}>
       <div className="space-y-4">
         {/* Header */}
         <div>
