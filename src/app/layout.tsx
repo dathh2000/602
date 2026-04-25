@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   icons: {
     apple: '/icons/icon-192.png',
   },
+  other: {
+    'zalo-platform-site-verification': 'JVIt8AlzE2rrxxTpZDqNHLdGW4-rfbKLCJ8s',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
