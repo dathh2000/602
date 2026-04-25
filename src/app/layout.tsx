@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Phòng trọ',
-  description: 'Quản lý chi tiêu phòng trọ',
+  description: 'Quản lý chi tiêu phòng trọ.',
   manifest: '/manifest.json',
   icons: {
     apple: '/icons/icon-192.png',
