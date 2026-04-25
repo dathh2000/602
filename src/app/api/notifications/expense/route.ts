@@ -3,7 +3,17 @@ import { adminDb } from '@/src/lib/firebase/admin'
 import { notifyNewExpense } from '@/src/lib/zalo/notify'
 
 export async function POST(req: NextRequest) {
-  const { roomId, expenseTitle, amount, paidBy, participants } = await req.json()
+  let body: { roomId?: string; expenseTitle?: string; amount?: number; paidBy?: string; participants?: unknown }
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
+
+  const { roomId, expenseTitle, amount, paidBy, participants } = body
+  if (!roomId || !expenseTitle || !amount || !paidBy || !Array.isArray(participants) || participants.length === 0) {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
 
   const membersSnap = await adminDb.collection('rooms').doc(roomId).collection('members').get()
   const members = Object.fromEntries(membersSnap.docs.map(d => [d.id, d.data()]))

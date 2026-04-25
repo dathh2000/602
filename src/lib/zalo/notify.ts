@@ -1,18 +1,22 @@
 export async function sendZaloMessage(zaloUserId: string, message: string): Promise<void> {
-  const res = await fetch('https://openapi.zalo.me/v2.0/oa/message', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      access_token: process.env.ZALO_OA_ACCESS_TOKEN!,
-    },
-    body: JSON.stringify({
-      recipient: { user_id: zaloUserId },
-      message: { text: message },
-    }),
-  })
-  if (!res.ok) {
-    const err = await res.text()
-    console.error(`Zalo notify failed for ${zaloUserId}:`, err)
+  try {
+    const res = await fetch('https://openapi.zalo.me/v2.0/oa/message', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        access_token: process.env.ZALO_OA_ACCESS_TOKEN!,
+      },
+      body: JSON.stringify({
+        recipient: { user_id: zaloUserId },
+        message: { text: message },
+      }),
+    })
+    if (!res.ok) {
+      const err = await res.text()
+      console.error(`Zalo notify failed for ${zaloUserId}:`, err)
+    }
+  } catch (err) {
+    console.error(`Zalo notify network error for ${zaloUserId}:`, err)
   }
 }
 
