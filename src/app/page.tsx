@@ -58,10 +58,10 @@ export default function DashboardPage() {
   return (
     <main className="p-4 space-y-4">
       <div className="sticky top-0 z-30 bg-gradient-to-r from-amber-400 to-red-500 rounded-2xl p-4 text-white flex justify-between items-center">
-        <div>
+        <button onClick={() => router.push('/members')} className="text-left active:opacity-75">
           <p className="text-xs opacity-80">🏠 {room.name}</p>
-          <p className="font-bold text-lg">{members.length} thành viên</p>
-        </div>
+          <p className="font-bold text-lg">{members.length} thành viên →</p>
+        </button>
         <div className="text-right flex flex-col items-end gap-1">
           <p className="text-xs opacity-80">Mã mời: <span className="font-bold tracking-widest">{room.inviteCode}</span></p>
           <button onClick={() => signOut().then(() => window.location.href = '/login')}
