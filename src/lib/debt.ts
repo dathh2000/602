@@ -1,5 +1,5 @@
 // src/lib/debt.ts
-import type { Expense, DebtEdge } from '@/types'
+import type { Expense, DebtEdge } from '@/src/types'
 
 export function simplifyDebts(
   expenses: Expense[],

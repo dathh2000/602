@@ -1,7 +1,7 @@
 // src/lib/debt.test.ts
 import { describe, it, expect } from 'vitest'
 import { simplifyDebts } from './debt'
-import type { Expense } from '@/types'
+import type { Expense } from '@/src/types'
 
 const mkExpense = (overrides: Partial<Expense>): Expense => ({
   id: 'e1', title: 'test', amount: 100, paidBy: 'A',
