@@ -104,7 +104,7 @@ export default function DashboardPage() {
       <div>
         <p className="text-xs text-amber-700 font-bold uppercase mb-2">Chi tiêu gần đây</p>
         <div className="space-y-2">
-          {expenses.slice(0, 5).map(e => (
+          {expenses.map(e => (
             <ExpenseCard key={e.id} expense={e} members={members} onClick={() => setSelectedExpense(e)} />
           ))}
           {expenses.length === 0 && (

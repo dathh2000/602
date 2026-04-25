@@ -27,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <meta name="zalo-platform-site-verification" content="JVIt8AlzE2rrxxTpZDqNHLdGW4-rfbKLCJ8s" />
       </head>
-      <body className={`${inter.className} bg-amber-50`} style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+      <body className={`${inter.className} bg-amber-50`} style={{ paddingBottom: 'calc(4.5rem + env(safe-area-inset-bottom))' }}>
         <Providers>{children}</Providers>
         <BottomNav />
       </body>
