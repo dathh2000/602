@@ -3,22 +3,24 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { addDoc, doc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { roomsCol, membersCol } from '@/src/lib/firebase/collections'
-import { generateInviteCode } from '@/src/lib/utils'
 import { useAuth } from '@/src/hooks/useAuth'
+import toast from 'react-hot-toast'
 
 export default function CreateRoomPage() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
 
   async function handleCreate() {
-    if (!user || !name.trim()) return
+    if (!user) { toast.error('Chưa đăng nhập'); return }
+    if (!name.trim()) return
     setLoading(true)
     try {
       const roomRef = await addDoc(roomsCol(), {
         name: name.trim(),
-        inviteCode: generateInviteCode(),
+        inviteCode: name.trim(),
+        inviteCodeLower: name.trim().toLowerCase(),
         createdAt: serverTimestamp(),
         memberIds: { [user.uid]: true },
       })
@@ -26,8 +28,12 @@ export default function CreateRoomPage() {
         displayName: user.displayName ?? 'Thành viên',
         avatarUrl: user.photoURL ?? '',
         zaloId: user.uid.replace('zalo_', ''),
+        role: 'admin',
       })
       router.push('/')
+    } catch (err) {
+      console.error('Create room error:', err)
+      toast.error(err instanceof Error ? err.message : 'Không thể tạo phòng')
     } finally { setLoading(false) }
   }
 
@@ -37,7 +43,7 @@ export default function CreateRoomPage() {
       <input value={name} onChange={e => setName(e.target.value)}
         placeholder="Tên phòng (VD: Phòng 302)"
         className="w-full max-w-sm border-2 border-amber-300 rounded-xl px-4 py-3 bg-amber-50 text-sm" />
-      <button onClick={handleCreate} disabled={loading || !name.trim()}
+      <button onClick={handleCreate} disabled={loading || authLoading || !name.trim()}
         className="w-full max-w-sm bg-gradient-to-r from-amber-400 to-red-500 text-white rounded-xl py-3 font-bold text-sm disabled:opacity-50">
         {loading ? 'Đang tạo...' : 'Tạo phòng'}
       </button>

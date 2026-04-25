@@ -4,6 +4,7 @@ export interface Member {
   displayName: string
   avatarUrl: string
   zaloId: string
+  role: 'admin' | 'member'
 }
 
 export type ExpenseCategory = 'food' | 'grocery' | 'transport' | 'repair' | 'other'

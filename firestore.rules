@@ -1,18 +1,22 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isMember(roomId) {
-      return request.auth != null &&
-        exists(/databases/$(database)/documents/rooms/$(roomId)/members/$(request.auth.uid));
-    }
+
     match /rooms/{roomId} {
-      allow read: if isMember(roomId);
+      // Đọc room: check trực tiếp từ document data (không cần cross-doc read)
+      allow read: if request.auth != null &&
+        resource.data.memberIds[request.auth.uid] == true;
       allow create: if request.auth != null;
-      allow update: if isMember(roomId);
+      allow update: if request.auth != null &&
+        resource.data.memberIds[request.auth.uid] == true;
+
+      // Tất cả subcollections: check room document
       match /{subcollection=**} {
-        allow read, write: if isMember(roomId);
+        allow read, write: if request.auth != null &&
+          get(/databases/$(database)/documents/rooms/$(roomId)).data.memberIds[request.auth.uid] == true;
       }
     }
+
     match /users/{userId} {
       allow read, write: if request.auth.uid == userId;
     }

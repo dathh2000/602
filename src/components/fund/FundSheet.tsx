@@ -43,7 +43,7 @@ export function FundSheet({ open, onClose, roomId, currentUserId, currentBalance
     try {
       const batch = writeBatch(db)
       const delta = type === 'deposit' ? amountNum : -amountNum
-      batch.update(fundDoc(roomId), { balance: increment(delta) })
+      batch.set(fundDoc(roomId), { balance: increment(delta) }, { merge: true })
       const newTxRef = fsDoc(fundTxCol(roomId))
       batch.set(newTxRef, {
         type, amount: amountNum, userId: currentUserId,

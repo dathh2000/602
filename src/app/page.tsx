@@ -15,7 +15,7 @@ import { LoadingScreen } from '@/src/components/ui/LoadingScreen'
 import { formatVND, daysUntilDue } from '@/src/lib/utils'
 
 export default function DashboardPage() {
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const router = useRouter()
   const { room, members, loading } = useRoom()
   const expenses = useExpenses(room?.id)
@@ -38,6 +38,10 @@ export default function DashboardPage() {
         className="text-amber-600 underline text-sm">
         Nhập mã mời
       </button>
+      <button onClick={() => signOut().then(() => window.location.href = '/login')}
+        className="text-gray-400 text-xs underline mt-2">
+        Đăng xuất
+      </button>
     </div>
   )
 
@@ -56,8 +60,12 @@ export default function DashboardPage() {
           <p className="text-xs opacity-80">🏠 {room.name}</p>
           <p className="font-bold text-lg">{members.length} thành viên</p>
         </div>
-        <div className="text-right text-xs opacity-80">
-          Mã mời<br/><span className="font-bold tracking-widest text-sm">{room.inviteCode}</span>
+        <div className="text-right flex flex-col items-end gap-1">
+          <p className="text-xs opacity-80">Mã mời: <span className="font-bold tracking-widest">{room.inviteCode}</span></p>
+          <button onClick={() => signOut().then(() => window.location.href = '/login')}
+            className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded-lg">
+            Đăng xuất
+          </button>
         </div>
       </div>
 

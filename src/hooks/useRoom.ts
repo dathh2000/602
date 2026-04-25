@@ -29,5 +29,6 @@ export function useRoom() {
     return () => { unsub(); unsubMembers?.() }
   }, [user])
 
-  return { room, members, loading }
+  const isAdmin = user ? (members.find(m => m.id === user.uid)?.role === 'admin') : false
+  return { room, members, loading, isAdmin }
 }

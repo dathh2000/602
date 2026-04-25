@@ -69,7 +69,7 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
       if (useFund) {
         const batch = writeBatch(db)
         const newFundTxRef = fsDoc(fundTxCol(roomId))
-        batch.update(fundDoc(roomId), { balance: increment(-amountNum) })
+        batch.set(fundDoc(roomId), { balance: increment(-amountNum) }, { merge: true })
         batch.set(newFundTxRef, {
           type: 'withdraw', amount: amountNum, userId: currentUserId,
           note: title.trim(), relatedExpenseId: null, createdAt: serverTimestamp(),
@@ -77,18 +77,14 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
         await batch.commit()
       }
 
-      // Notify participants via Zalo (fire-and-forget)
-      fetch('/api/notifications/expense', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          roomId,
-          expenseTitle: title.trim(),
-          amount: amountNum,
-          paidBy,
-          participants: useFund ? [] : participants,
-        }),
-      }).catch(() => {}) // non-critical
+      // Notify participants via Zalo (fire-and-forget, chỉ khi có người tham gia)
+      if (!useFund && participants.length > 0) {
+        fetch('/api/notifications/expense', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomId, expenseTitle: title.trim(), amount: amountNum, paidBy, participants }),
+        }).catch(() => {})
+      }
 
       toast.success('Đã lưu chi tiêu!')
       handleClose()

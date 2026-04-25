@@ -14,16 +14,16 @@ export async function GET(req: NextRequest) {
 
   try {
     const zaloUser = await exchangeZaloCode(code)
-    const uid = `zalo_${zaloUser.uid}`
+    const uid = `zalo_${zaloUser.id}`
 
     await adminDb.collection('users').doc(uid).set({
       displayName: zaloUser.name,
       avatarUrl: zaloUser.picture?.data?.url ?? '',
-      zaloId: zaloUser.uid,
+      zaloId: zaloUser.id,
       updatedAt: new Date(),
     }, { merge: true })
 
-    const customToken = await adminAuth.createCustomToken(uid, { zaloId: zaloUser.uid })
+    const customToken = await adminAuth.createCustomToken(uid, { zaloId: zaloUser.id })
     const response = NextResponse.redirect(`${process.env.NEXTAUTH_URL}/?token=${customToken}`)
     response.cookies.delete('zalo_state')
     response.cookies.set('__session', uid, {
@@ -33,7 +33,9 @@ export async function GET(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 7, // 7 days
     })
     return response
-  } catch {
-    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/login?error=auth_failed`)
+  } catch (err) {
+    console.error('[Zalo callback error]', err)
+    const msg = err instanceof Error ? encodeURIComponent(err.message) : 'unknown'
+    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/login?error=auth_failed&detail=${msg}`)
   }
 }

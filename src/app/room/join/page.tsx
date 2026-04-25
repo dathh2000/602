@@ -16,27 +16,31 @@ export default function JoinRoomPage() {
     if (!user || !code.trim()) return
     setLoading(true)
     try {
-      const q = query(roomsCol(), where('inviteCode', '==', code.trim().toUpperCase()))
+      const q = query(roomsCol(), where('inviteCodeLower', '==', code.trim().toLowerCase()))
       const snap = await getDocs(q)
-      if (snap.empty) { toast.error('Mã mời không hợp lệ'); return }
+      if (snap.empty) { toast.error('Mã mời không đúng'); setLoading(false); return }
       const roomId = snap.docs[0].id
       await setDoc(doc(membersCol(roomId), user.uid), {
         displayName: user.displayName ?? 'Thành viên',
         avatarUrl: user.photoURL ?? '',
         zaloId: user.uid.replace('zalo_', ''),
+        role: 'member',
       })
       await updateDoc(snap.docs[0].ref, { [`memberIds.${user.uid}`]: true })
       router.push('/')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Có lỗi xảy ra')
     } finally { setLoading(false) }
   }
 
   return (
     <div className="min-h-screen bg-amber-50 flex flex-col items-center justify-center p-6 gap-4">
       <h1 className="text-2xl font-extrabold text-amber-800">🔑 Nhập mã mời</h1>
-      <input value={code} onChange={e => setCode(e.target.value.toUpperCase())}
-        placeholder="VD: AB12CD" maxLength={6}
-        className="w-full max-w-sm border-2 border-amber-300 rounded-xl px-4 py-3 bg-amber-50 text-sm text-center text-xl tracking-widest font-bold" />
-      <button onClick={handleJoin} disabled={loading || code.length < 6}
+      <p className="text-sm text-amber-600 text-center">Nhập tên phòng để tham gia<br/>(VD: 602, Phòng 302...)</p>
+      <input value={code} onChange={e => setCode(e.target.value)}
+        placeholder="Nhập tên phòng"
+        className="w-full max-w-sm border-2 border-amber-300 rounded-xl px-4 py-3 bg-amber-50 text-sm text-center text-lg font-bold" />
+      <button onClick={handleJoin} disabled={loading || !code.trim()}
         className="w-full max-w-sm bg-gradient-to-r from-amber-400 to-red-500 text-white rounded-xl py-3 font-bold disabled:opacity-50">
         {loading ? 'Đang tham gia...' : 'Tham gia phòng'}
       </button>
