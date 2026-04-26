@@ -5,7 +5,7 @@ import { db } from '@/src/lib/firebase/config'
 import { fundDoc, fundTxCol } from '@/src/lib/firebase/collections'
 import { BottomSheet } from '@/src/components/ui/BottomSheet'
 import { formatVND, formatAmountInput, parseAmountInput } from '@/src/lib/utils'
-import type { FundTxType } from '@/src/types'
+import type { FundTxType, Member } from '@/src/types'
 import toast from 'react-hot-toast'
 
 interface Props {
@@ -13,12 +13,14 @@ interface Props {
   onClose: () => void
   roomId: string
   currentUserId: string
+  members: Member[]
   currentBalance: number
   defaultType?: FundTxType
 }
 
-export function FundSheet({ open, onClose, roomId, currentUserId, currentBalance, defaultType = 'deposit' }: Props) {
+export function FundSheet({ open, onClose, roomId, currentUserId, members, currentBalance, defaultType = 'deposit' }: Props) {
   const [type, setType] = useState<FundTxType>(defaultType)
+  const [userId, setUserId] = useState(currentUserId)
   const [amount, setAmount] = useState('')
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
@@ -27,11 +29,15 @@ export function FundSheet({ open, onClose, roomId, currentUserId, currentBalance
     setType(defaultType)
   }, [defaultType])
 
+  useEffect(() => {
+    setUserId(currentUserId)
+  }, [currentUserId])
+
   const amountNum = parseAmountInput(amount)
   const preview = type === 'deposit' ? currentBalance + amountNum : currentBalance - amountNum
 
   function handleClose() {
-    setAmount(''); setNote(''); onClose()
+    setAmount(''); setNote(''); setUserId(currentUserId); onClose()
   }
 
   async function handleSave() {
@@ -46,7 +52,7 @@ export function FundSheet({ open, onClose, roomId, currentUserId, currentBalance
       batch.set(fundDoc(roomId), { balance: increment(delta) }, { merge: true })
       const newTxRef = fsDoc(fundTxCol(roomId))
       batch.set(newTxRef, {
-        type, amount: amountNum, userId: currentUserId,
+        type, amount: amountNum, userId,
         note: note.trim() || (type === 'deposit' ? 'Nạp quỹ' : 'Rút quỹ'),
         relatedExpenseId: null, createdAt: serverTimestamp(),
       })
@@ -70,6 +76,18 @@ export function FundSheet({ open, onClose, roomId, currentUserId, currentBalance
           </button>
         ))}
       </div>
+
+      <label className="text-xs text-amber-700 font-semibold">
+        {type === 'deposit' ? 'NGƯỜI NẠP' : 'NGƯỜI RÚT'}
+      </label>
+      <select value={userId} onChange={e => setUserId(e.target.value)}
+        className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm bg-yellow-50 mt-1 mb-3">
+        {members.map(m => (
+          <option key={m.id} value={m.id}>
+            {m.displayName}{m.id === currentUserId ? ' (bạn)' : ''}
+          </option>
+        ))}
+      </select>
 
       <label className="text-xs text-amber-700 font-semibold">SỐ TIỀN (₫)</label>
       <input value={amount} onChange={e => setAmount(formatAmountInput(e.target.value))} inputMode="numeric"

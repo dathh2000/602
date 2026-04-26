@@ -33,6 +33,7 @@ export default function FundPage() {
           onClose={() => setSheet(null)}
           roomId={room.id}
           currentUserId={user.uid}
+          members={members}
           currentBalance={fund.balance}
           defaultType={sheet}
         />

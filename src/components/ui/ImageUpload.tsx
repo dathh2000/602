@@ -3,6 +3,7 @@ import { useRef, useState } from 'react'
 
 interface Props {
   onUploaded: (url: string | null) => void
+  initialUrl?: string | null
 }
 
 async function uploadImage(file: File): Promise<string> {
@@ -15,8 +16,8 @@ async function uploadImage(file: File): Promise<string> {
   return data.url as string
 }
 
-export function ImageUpload({ onUploaded }: Props) {
-  const [preview, setPreview] = useState<string | null>(null)
+export function ImageUpload({ onUploaded, initialUrl = null }: Props) {
+  const [preview, setPreview] = useState<string | null>(initialUrl)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const galleryRef = useRef<HTMLInputElement>(null)
