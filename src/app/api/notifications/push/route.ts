@@ -33,17 +33,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Not a member' }, { status: 403 })
     }
 
-    // Collect tokens from all members except excluded user
+    // Collect tokens: chỉ lấy token MỚI NHẤT của mỗi member (last in arrayUnion).
+    // Tránh trùng lặp khi 1 device tích nhiều token qua các lần register SW khác nhau.
     const membersSnap = await adminDb.collection('rooms').doc(roomId).collection('members').get()
     const tokensByMember: Record<string, string[]> = {}
+    const sendTokens: string[] = []
     for (const m of membersSnap.docs) {
       if (excludeUserId && m.id === excludeUserId) continue
       const tokens = (m.data().fcmTokens as string[] | undefined) ?? []
-      if (tokens.length > 0) tokensByMember[m.id] = tokens
+      if (tokens.length === 0) continue
+      tokensByMember[m.id] = tokens
+      sendTokens.push(tokens[tokens.length - 1]) // chỉ token mới nhất
     }
 
-    const allTokens = Object.values(tokensByMember).flat()
-    if (allTokens.length === 0) {
+    if (sendTokens.length === 0) {
       return NextResponse.json({ ok: true, sent: 0 })
     }
 
@@ -52,11 +55,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No projectId' }, { status: 500 })
     }
 
+    // Tag dedup: nội dung giống nhau → iOS replace thay vì hiển thị 2 cái
+    const tag = `${title}|${body}`.slice(0, 100)
+
     const response = await sendPushMulticast(
       projectId,
-      allTokens,
+      sendTokens,
       { title, body },
-      { link: link ?? '/' },
+      { link: link ?? '/', tag },
     )
 
     // Cleanup invalid tokens
@@ -87,6 +93,24 @@ export async function POST(req: NextRequest) {
         }
       }
       await Promise.allSettled(cleanup)
+    }
+
+    // Cleanup token cũ: nếu member có nhiều token, chỉ giữ token vừa gửi (mới nhất).
+    // Token cũ thường stale do reinstall/SW update.
+    const stalePrune: Promise<unknown>[] = []
+    for (const [memberId, tokens] of Object.entries(tokensByMember)) {
+      if (tokens.length <= 1) continue
+      const keepToken = tokens[tokens.length - 1]
+      const stale = tokens.slice(0, -1).filter(t => t !== keepToken)
+      if (stale.length > 0) {
+        stalePrune.push(
+          adminDb.collection('rooms').doc(roomId).collection('members').doc(memberId)
+            .update({ fcmTokens: FieldValue.arrayRemove(...stale) })
+        )
+      }
+    }
+    if (stalePrune.length > 0) {
+      await Promise.allSettled(stalePrune)
     }
 
     return NextResponse.json({

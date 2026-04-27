@@ -17,6 +17,7 @@ import { AnnouncementSheet } from '@/src/components/activity/AnnouncementSheet'
 import { FAB } from '@/src/components/layout/FAB'
 import { Tag } from '@/src/components/ui/Tag'
 import { LoadingScreen } from '@/src/components/ui/LoadingScreen'
+import { InfiniteScrollSentinel } from '@/src/components/ui/InfiniteScrollSentinel'
 import { formatVND, daysUntilDue, currentYearMonth } from '@/src/lib/utils'
 
 export default function DashboardPage() {
@@ -24,14 +25,15 @@ export default function DashboardPage() {
   const router = useRouter()
   const { room, members, loading } = useRoom()
   const expenses = useExpenses(room?.id)
-  const bills = useBills(room?.id)
+  const { bills } = useBills(room?.id)
   const debts = useDebts(expenses, members)
   const { fund } = useFund(room?.id)
-  const { activities, unreadCount } = useActivities(room?.id, user?.uid)
+  const { activities, unreadCount, hasMore: hasMoreActivities, loadMore: loadMoreActivities } = useActivities(room?.id, user?.uid)
   useFcmToken(room?.id, user?.uid)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [announceOpen, setAnnounceOpen] = useState(false)
   const [selectedExpense, setSelectedExpense] = useState<typeof expenses[0] | null>(null)
+  const [expensesLimit, setExpensesLimit] = useState(10)
 
   if (loading) return <LoadingScreen />
 
@@ -77,6 +79,8 @@ export default function DashboardPage() {
               members={members}
               activities={activities}
               unreadCount={unreadCount}
+              hasMore={hasMoreActivities}
+              onLoadMore={loadMoreActivities}
             />
           )}
           <button onClick={() => setAnnounceOpen(true)}
@@ -126,13 +130,19 @@ export default function DashboardPage() {
       <div>
         <p className="text-xs text-amber-700 font-bold uppercase mb-2">Chi tiêu gần đây</p>
         <div className="space-y-2">
-          {expenses.map(e => (
+          {expenses.slice(0, expensesLimit).map(e => (
             <ExpenseCard key={e.id} expense={e} members={members} onClick={() => setSelectedExpense(e)} />
           ))}
           {expenses.length === 0 && (
             <p className="text-center text-gray-400 text-sm py-4">Chưa có chi tiêu nào · Nhấn + để thêm</p>
           )}
         </div>
+        {expenses.length > 0 && (
+          <InfiniteScrollSentinel
+            hasMore={expensesLimit < expenses.length}
+            onLoadMore={() => setExpensesLimit(n => n + 10)}
+          />
+        )}
       </div>
 
       <FAB onClick={() => setSheetOpen(true)} />

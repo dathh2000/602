@@ -13,12 +13,13 @@ import { AddBillSheet } from '@/src/components/bill/AddBillSheet'
 import { BillDetailSheet } from '@/src/components/bill/BillDetailSheet'
 import { FAB } from '@/src/components/layout/FAB'
 import { LoadingScreen } from '@/src/components/ui/LoadingScreen'
+import { InfiniteScrollSentinel } from '@/src/components/ui/InfiniteScrollSentinel'
 import toast from 'react-hot-toast'
 
 export default function BillsPage() {
   const { user } = useAuth()
   const { room, loading } = useRoom()
-  const bills = useBills(room?.id)
+  const { bills, hasMore: hasMoreBills, loadMore: loadMoreBills } = useBills(room?.id, 20)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [pendingBills, setPendingBills] = useState<Set<string>>(new Set())
   const [selectedBillId, setSelectedBillId] = useState<string | null>(null)
@@ -74,15 +75,18 @@ export default function BillsPage() {
           Chưa có hóa đơn nào<br/>Nhấn + để thêm
         </p>
       ) : (
-        <div className="space-y-2">
-          {bills.map(b => (
-            <BillCard key={b.id} bill={b}
-              onMarkPaid={() => markPaid(b.id)}
-              onOpen={() => setSelectedBillId(b.id)}
-              isPending={pendingBills.has(b.id)}
-              isPaid={b.lastPaidMonth === currentYearMonth()} />
-          ))}
-        </div>
+        <>
+          <div className="space-y-2">
+            {bills.map(b => (
+              <BillCard key={b.id} bill={b}
+                onMarkPaid={() => markPaid(b.id)}
+                onOpen={() => setSelectedBillId(b.id)}
+                isPending={pendingBills.has(b.id)}
+                isPaid={b.lastPaidMonth === currentYearMonth()} />
+            ))}
+          </div>
+          <InfiniteScrollSentinel hasMore={hasMoreBills} onLoadMore={loadMoreBills} />
+        </>
       )}
 
       <FAB onClick={() => setSheetOpen(true)} />

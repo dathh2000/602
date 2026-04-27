@@ -9,9 +9,11 @@ interface Props {
   members: Member[]
   activities: Activity[]
   unreadCount: number
+  hasMore: boolean
+  onLoadMore: () => void
 }
 
-export function ActivityBell({ roomId, currentUserId, members, activities, unreadCount }: Props) {
+export function ActivityBell({ roomId, currentUserId, members, activities, unreadCount, hasMore, onLoadMore }: Props) {
   const [open, setOpen] = useState(false)
   return (
     <>
@@ -32,6 +34,8 @@ export function ActivityBell({ roomId, currentUserId, members, activities, unrea
           currentUserId={currentUserId}
           members={members}
           activities={activities}
+          hasMore={hasMore}
+          onLoadMore={onLoadMore}
         />
       )}
     </>

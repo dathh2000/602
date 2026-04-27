@@ -25,11 +25,14 @@ messaging.onBackgroundMessage((payload) => {
   const title = (payload.notification && payload.notification.title) || 'Phòng trọ'
   const body  = (payload.notification && payload.notification.body)  || ''
   const link  = (payload.data && payload.data.link) || '/'
+  const tag   = (payload.data && payload.data.tag) || (title + '|' + body)
   self.registration.showNotification(title, {
     body,
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
     data: { link },
+    tag,
+    renotify: false,
   })
 })
 

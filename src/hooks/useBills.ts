@@ -1,17 +1,33 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { onSnapshot, query, where } from 'firebase/firestore'
+import { useCallback, useEffect, useState } from 'react'
+import { onSnapshot, query, where, orderBy, limit, type QueryConstraint } from 'firebase/firestore'
 import { billsCol } from '@/src/lib/firebase/collections'
 import type { Bill } from '@/src/types'
 
-export function useBills(roomId: string | undefined) {
+/**
+ * useBills(roomId): không pagination, load tất cả bill active (dùng cho dashboard "sắp đến hạn")
+ * useBills(roomId, pageSize): pagination, dùng cho list trang Hóa đơn
+ */
+export function useBills(roomId: string | undefined, pageSize?: number) {
   const [bills, setBills] = useState<Bill[]>([])
+  const [pageLimit, setPageLimit] = useState(pageSize ?? null)
+  const [hasMore, setHasMore] = useState(true)
+
   useEffect(() => {
     if (!roomId) return
-    const q = query(billsCol(roomId), where('active', '==', true))
+    const constraints: QueryConstraint[] = [where('active', '==', true), orderBy('dueDay', 'asc')]
+    if (pageLimit !== null) constraints.push(limit(pageLimit))
+    const q = query(billsCol(roomId), ...constraints)
     return onSnapshot(q, snap => {
       setBills(snap.docs.map(d => ({ id: d.id, ...d.data() } as Bill)))
+      if (pageLimit !== null) setHasMore(snap.size === pageLimit)
     })
-  }, [roomId])
-  return bills
+  }, [roomId, pageLimit])
+
+  const loadMore = useCallback(() => {
+    if (!pageSize) return
+    setPageLimit(p => (p ?? 0) + pageSize)
+  }, [pageSize])
+
+  return { bills, hasMore: pageSize ? hasMore : false, loadMore }
 }
