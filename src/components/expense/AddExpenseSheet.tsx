@@ -8,6 +8,7 @@ import { BottomSheet } from '@/src/components/ui/BottomSheet'
 import { Avatar } from '@/src/components/ui/Avatar'
 import { ImageUpload } from '@/src/components/ui/ImageUpload'
 import { formatVND, formatAmountInput, parseAmountInput, currentYearMonth } from '@/src/lib/utils'
+import { computeAllSettled } from '@/src/lib/expense'
 import { logActivity } from '@/src/lib/activity'
 import type { Member, ExpenseCategory, Bill } from '@/src/types'
 import toast from 'react-hot-toast'
@@ -69,17 +70,20 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
           paidAt: null,
         }])
       )
+      const finalParticipants = useFund ? [] : participants
+      const allSettled = useFund ? true : computeAllSettled(finalParticipants, settlements)
 
       const expenseRef = await addDoc(expensesCol(roomId), {
         title: title.trim(),
         amount: amountNum,
         paidBy,
-        participants: useFund ? [] : participants,
+        participants: finalParticipants,
         category: 'other' as ExpenseCategory,
         date: serverTimestamp(),
         createdAt: serverTimestamp(),
         paidFromFund: useFund,
         settlements,
+        allSettled,
         ...(imageUrl ? { imageUrl } : {}),
       })
 

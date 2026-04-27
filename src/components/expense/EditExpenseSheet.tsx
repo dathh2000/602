@@ -5,6 +5,7 @@ import { expensesCol } from '@/src/lib/firebase/collections'
 import { BottomSheet } from '@/src/components/ui/BottomSheet'
 import { Avatar } from '@/src/components/ui/Avatar'
 import { formatVND, formatAmountInput, parseAmountInput } from '@/src/lib/utils'
+import { computeAllSettled } from '@/src/lib/expense'
 import type { Expense, Member, ExpenseCategory } from '@/src/types'
 import toast from 'react-hot-toast'
 
@@ -56,14 +57,17 @@ export function EditExpenseSheet({ open, onClose, expense, members, roomId }: Pr
           return [m.id, { paid, paidAt: null }]
         })
       )
+      const finalParticipants = expense.paidFromFund ? [] : participants
+      const allSettled = expense.paidFromFund ? true : computeAllSettled(finalParticipants, newSettlements)
 
       await updateDoc(doc(expensesCol(roomId), expense.id), {
         title: title.trim(),
         amount: amountNum,
         paidBy,
-        participants: expense.paidFromFund ? [] : participants,
+        participants: finalParticipants,
         category,
         settlements: newSettlements,
+        allSettled,
         updatedAt: serverTimestamp(),
       })
 

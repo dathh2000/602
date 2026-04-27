@@ -8,6 +8,7 @@ import { Tag } from '@/src/components/ui/Tag'
 import { EditExpenseSheet } from '@/src/components/expense/EditExpenseSheet'
 import { ConfirmDialog } from '@/src/components/ui/ConfirmDialog'
 import { logActivity } from '@/src/lib/activity'
+import { computeAllSettled } from '@/src/lib/expense'
 import { formatVND, formatDate } from '@/src/lib/utils'
 import type { Expense, Member } from '@/src/types'
 import toast from 'react-hot-toast'
@@ -43,9 +44,17 @@ export function ExpenseDetailSheet({ open, onClose, expense, members, roomId, cu
   async function toggleSettlement(userId: string, currentPaid: boolean) {
     setUpdating(userId)
     try {
+      const newPaid = !currentPaid
+      const projectedSettlements = {
+        ...expense.settlements,
+        [userId]: { paid: newPaid, paidAt: newPaid ? new Date() : null },
+      }
+      const newAllSettled = computeAllSettled(expense.participants, projectedSettlements)
+
       await updateDoc(doc(expensesCol(roomId), expense.id), {
-        [`settlements.${userId}.paid`]: !currentPaid,
-        [`settlements.${userId}.paidAt`]: !currentPaid ? serverTimestamp() : null,
+        [`settlements.${userId}.paid`]: newPaid,
+        [`settlements.${userId}.paidAt`]: newPaid ? serverTimestamp() : null,
+        allSettled: newAllSettled,
       })
       if (!currentPaid) {
         const memberName = members.find(m => m.id === userId)?.displayName ?? '?'

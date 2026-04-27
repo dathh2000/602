@@ -17,7 +17,7 @@ export default function MembersPage() {
   const { user } = useAuth()
   const router = useRouter()
   const { room, members, loading } = useRoom()
-  const expenses = useExpenses(room?.id)
+  const { expenses } = useExpenses(room?.id)
   const { fund, transactions } = useFund(room?.id)
   const [editingName, setEditingName] = useState(false)
   const [newName, setNewName] = useState('')

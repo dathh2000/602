@@ -4,8 +4,9 @@ import { doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore'
 import { expensesCol } from '@/src/lib/firebase/collections'
 import { Avatar } from '@/src/components/ui/Avatar'
 import { formatVND } from '@/src/lib/utils'
+import { computeAllSettled } from '@/src/lib/expense'
 import { logActivity } from '@/src/lib/activity'
-import type { DebtEdge, Member, Expense } from '@/src/types'
+import type { DebtEdge, Member, Expense, Settlement } from '@/src/types'
 import toast from 'react-hot-toast'
 
 interface Props {
@@ -84,15 +85,16 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
       for (const e of expenses) {
         if (e.paidFromFund) continue
 
+        // Tích lũy tất cả thay đổi settlement cho expense này, rồi update 1 lần với allSettled
+        const settlementUpdates: Record<string, Partial<Settlement>> = {}
+        const projectedSettlements = { ...e.settlements }
+
         // 1) from là người tham gia khoản người khác chi → đánh dấu đã trả
         if (e.participants.includes(debt.from) && !e.settlements[debt.from]?.paid) {
-          updates.push(updateDoc(doc(expensesCol(roomId), e.id), {
-            [`settlements.${debt.from}.paid`]: true,
-            [`settlements.${debt.from}.paidAt`]: serverTimestamp(),
-          }))
+          settlementUpdates[debt.from] = { paid: true }
+          projectedSettlements[debt.from] = { paid: true, paidAt: new Date() }
 
           // Tối giản: nếu khoản chi không phải do to chi → from đã trả thay payer cho to
-          // → ghi nhận payer đã nhận đủ phần này từ to (giảm nợ payer ↔ to)
           if (e.paidBy !== debt.to && e.paidBy !== debt.from) {
             const share = Math.round(e.amount / e.participants.length)
             const payerName = getMember(e.paidBy)?.displayName ?? '?'
@@ -114,6 +116,7 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
               createdAt: serverTimestamp(),
               paidFromFund: false,
               settlements: newSettlements,
+              allSettled: computeAllSettled([debt.to], newSettlements),
             }))
           }
         }
@@ -127,11 +130,8 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
             if (e.settlements[p]?.paid) continue
             if (p === debt.from) continue
 
-            // Đánh dấu khoản gốc đã trả (xoá liên kết nợ với from)
-            updates.push(updateDoc(doc(expensesCol(roomId), e.id), {
-              [`settlements.${p}.paid`]: true,
-              [`settlements.${p}.paidAt`]: serverTimestamp(),
-            }))
+            settlementUpdates[p] = { paid: true }
+            projectedSettlements[p] = { paid: true, paidAt: new Date() }
 
             // Nếu là bên thứ 3 → tạo khoản mới: to chi hộ p, p còn nợ to
             if (p !== debt.to) {
@@ -153,9 +153,23 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
                 createdAt: serverTimestamp(),
                 paidFromFund: false,
                 settlements: newSettlements,
+                allSettled: computeAllSettled([p], newSettlements),
               }))
             }
           }
+        }
+
+        // Apply tích lũy + allSettled cho expense gốc
+        const settlementKeys = Object.keys(settlementUpdates)
+        if (settlementKeys.length > 0) {
+          const updateData: Record<string, unknown> = {
+            allSettled: computeAllSettled(e.participants, projectedSettlements),
+          }
+          for (const uid of settlementKeys) {
+            updateData[`settlements.${uid}.paid`] = true
+            updateData[`settlements.${uid}.paidAt`] = serverTimestamp()
+          }
+          updates.push(updateDoc(doc(expensesCol(roomId), e.id), updateData))
         }
       }
       await Promise.all(updates)

@@ -1,6 +1,8 @@
 'use client'
 import { useRoom } from '@/src/hooks/useRoom'
 import { useExpenses } from '@/src/hooks/useExpenses'
+import { useExpensesUnsettled } from '@/src/hooks/useExpensesUnsettled'
+import { useExpensesMigration } from '@/src/hooks/useExpensesMigration'
 import { useDebts } from '@/src/hooks/useDebts'
 import { DebtCard } from '@/src/components/debt/DebtCard'
 import { LoadingScreen } from '@/src/components/ui/LoadingScreen'
@@ -8,8 +10,10 @@ import { formatVND } from '@/src/lib/utils'
 
 export default function DebtsPage() {
   const { room, members, loading } = useRoom()
-  const expenses = useExpenses(room?.id)
-  const debts = useDebts(expenses, members)
+  useExpensesMigration(room?.id)
+  const unsettledExpenses = useExpensesUnsettled(room?.id)
+  const debts = useDebts(unsettledExpenses, members)
+  const { expenses: recent } = useExpenses(room?.id, 20)
 
   if (loading) return <LoadingScreen />
 
@@ -20,9 +24,8 @@ export default function DebtsPage() {
     </div>
   )
 
-  const settled = expenses.filter(e =>
-    !e.paidFromFund && e.participants.length > 0 &&
-    e.participants.every(p => e.settlements[p]?.paid)
+  const settled = recent.filter(e =>
+    !e.paidFromFund && e.participants.length > 0 && e.allSettled === true
   ).slice(0, 5)
 
   return (
@@ -37,8 +40,8 @@ export default function DebtsPage() {
       ) : (
         <div className="space-y-3">
           <p className="text-xs text-amber-700 font-bold uppercase">Cần thanh toán</p>
-          {debts.map((d, i) => (
-            <DebtCard key={`${d.from}-${d.to}`} debt={d} members={members} expenses={expenses} roomId={room.id} />
+          {debts.map(d => (
+            <DebtCard key={`${d.from}-${d.to}`} debt={d} members={members} expenses={unsettledExpenses} roomId={room.id} />
           ))}
         </div>
       )}

@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useRoom } from '@/src/hooks/useRoom'
 import { useExpenses } from '@/src/hooks/useExpenses'
+import { useExpensesUnsettled } from '@/src/hooks/useExpensesUnsettled'
+import { useExpensesMigration } from '@/src/hooks/useExpensesMigration'
 import { useBills } from '@/src/hooks/useBills'
 import { useDebts } from '@/src/hooks/useDebts'
 import { useFund } from '@/src/hooks/useFund'
@@ -24,16 +26,17 @@ export default function DashboardPage() {
   const { user, signOut } = useAuth()
   const router = useRouter()
   const { room, members, loading } = useRoom()
-  const expenses = useExpenses(room?.id)
+  useExpensesMigration(room?.id)
+  const { expenses, hasMore: hasMoreExpenses, loadMore: loadMoreExpenses } = useExpenses(room?.id, 10)
+  const unsettledExpenses = useExpensesUnsettled(room?.id)
   const { bills } = useBills(room?.id)
-  const debts = useDebts(expenses, members)
+  const debts = useDebts(unsettledExpenses, members)
   const { fund } = useFund(room?.id)
   const { activities, unreadCount, hasMore: hasMoreActivities, loadMore: loadMoreActivities } = useActivities(room?.id, user?.uid)
   useFcmToken(room?.id, user?.uid)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [announceOpen, setAnnounceOpen] = useState(false)
   const [selectedExpense, setSelectedExpense] = useState<typeof expenses[0] | null>(null)
-  const [expensesLimit, setExpensesLimit] = useState(10)
 
   if (loading) return <LoadingScreen />
 
@@ -130,7 +133,7 @@ export default function DashboardPage() {
       <div>
         <p className="text-xs text-amber-700 font-bold uppercase mb-2">Chi tiêu gần đây</p>
         <div className="space-y-2">
-          {expenses.slice(0, expensesLimit).map(e => (
+          {expenses.map(e => (
             <ExpenseCard key={e.id} expense={e} members={members} onClick={() => setSelectedExpense(e)} />
           ))}
           {expenses.length === 0 && (
@@ -138,10 +141,7 @@ export default function DashboardPage() {
           )}
         </div>
         {expenses.length > 0 && (
-          <InfiniteScrollSentinel
-            hasMore={expensesLimit < expenses.length}
-            onLoadMore={() => setExpensesLimit(n => n + 10)}
-          />
+          <InfiniteScrollSentinel hasMore={hasMoreExpenses} onLoadMore={loadMoreExpenses} />
         )}
       </div>
 
