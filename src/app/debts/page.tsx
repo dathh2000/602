@@ -2,7 +2,6 @@
 import { useRoom } from '@/src/hooks/useRoom'
 import { useExpenses } from '@/src/hooks/useExpenses'
 import { useExpensesUnsettled } from '@/src/hooks/useExpensesUnsettled'
-import { useExpensesMigration } from '@/src/hooks/useExpensesMigration'
 import { useDebts } from '@/src/hooks/useDebts'
 import { DebtCard } from '@/src/components/debt/DebtCard'
 import { LoadingScreen } from '@/src/components/ui/LoadingScreen'
@@ -10,7 +9,6 @@ import { formatVND } from '@/src/lib/utils'
 
 export default function DebtsPage() {
   const { room, members, loading } = useRoom()
-  useExpensesMigration(room?.id)
   const unsettledExpenses = useExpensesUnsettled(room?.id)
   const debts = useDebts(unsettledExpenses, members)
   const { expenses: recent } = useExpenses(room?.id, 20)

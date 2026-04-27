@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation'
 import { useRoom } from '@/src/hooks/useRoom'
 import { useExpenses } from '@/src/hooks/useExpenses'
 import { useExpensesUnsettled } from '@/src/hooks/useExpensesUnsettled'
-import { useExpensesMigration } from '@/src/hooks/useExpensesMigration'
 import { useBills } from '@/src/hooks/useBills'
 import { useDebts } from '@/src/hooks/useDebts'
 import { useFund } from '@/src/hooks/useFund'
@@ -26,7 +25,6 @@ export default function DashboardPage() {
   const { user, signOut } = useAuth()
   const router = useRouter()
   const { room, members, loading } = useRoom()
-  useExpensesMigration(room?.id)
   const { expenses, hasMore: hasMoreExpenses, loadMore: loadMoreExpenses } = useExpenses(room?.id, 10)
   const unsettledExpenses = useExpensesUnsettled(room?.id)
   const { bills } = useBills(room?.id)

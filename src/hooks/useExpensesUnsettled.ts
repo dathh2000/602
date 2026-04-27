@@ -10,8 +10,8 @@ import type { Expense } from '@/src/types'
  *
  * Dùng cho debt simplification: cần tất cả unsettled để tính chính xác.
  *
- * Lưu ý: doc cũ chưa migrate (allSettled === undefined) sẽ KHÔNG match query này.
- * Dùng `useExpensesMigration` để backfill trước.
+ * Lưu ý: doc cũ chưa có field `allSettled` sẽ KHÔNG match query này.
+ * Cần đảm bảo tất cả doc có field này (đã backfill sau lần migrate đầu).
  */
 export function useExpensesUnsettled(roomId: string | undefined) {
   const [expenses, setExpenses] = useState<Expense[]>([])
