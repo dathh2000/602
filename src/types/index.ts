@@ -5,6 +5,38 @@ export interface Member {
   avatarUrl: string
   zaloId?: string
   role: 'admin' | 'member'
+  fcmTokens?: string[]
+}
+
+export type ActivityType =
+  | 'expense.created'
+  | 'expense.settled'
+  | 'debt.settled'
+  | 'bill.created'
+  | 'bill.due'
+  | 'bill.paid'
+  | 'fund.deposit'
+  | 'fund.withdraw'
+  | 'announcement'
+
+export interface ActivityMeta {
+  expenseId?: string
+  billId?: string
+  txId?: string
+  debtFrom?: string
+  debtTo?: string
+  amount?: number
+}
+
+export interface Activity {
+  id: string
+  type: ActivityType
+  actorId: string | null
+  title: string
+  body: string
+  meta: ActivityMeta
+  readBy: Record<string, true>
+  createdAt: Date
 }
 
 export type ExpenseCategory = 'food' | 'grocery' | 'transport' | 'repair' | 'other'

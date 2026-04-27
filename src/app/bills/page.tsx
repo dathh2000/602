@@ -3,7 +3,8 @@ import { useState } from 'react'
 import { addDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { format } from 'date-fns'
 import { billPaymentsCol, billDoc } from '@/src/lib/firebase/collections'
-import { currentYearMonth } from '@/src/lib/utils'
+import { currentYearMonth, formatVND } from '@/src/lib/utils'
+import { logActivity } from '@/src/lib/activity'
 import { useRoom } from '@/src/hooks/useRoom'
 import { useBills } from '@/src/hooks/useBills'
 import { useAuth } from '@/src/hooks/useAuth'
@@ -37,12 +38,22 @@ export default function BillsPage() {
     setPendingBills(prev => new Set(prev).add(billId))
     try {
       const month = format(new Date(), 'yyyy-MM')
+      const bill = bills.find(b => b.id === billId)
       await Promise.all([
         addDoc(billPaymentsCol(room.id, billId), {
           paid: true, paidAt: serverTimestamp(), paidBy: user.uid, month,
         }),
         updateDoc(billDoc(room.id, billId), { lastPaidMonth: month }),
       ])
+      if (bill) {
+        await logActivity(room.id, {
+          type: 'bill.paid',
+          actorId: user.uid,
+          title: `✅ Đã đóng hóa đơn: ${bill.title}`,
+          body: `Tháng ${month} · ${formatVND(bill.amount)}`,
+          meta: { billId, amount: bill.amount },
+        })
+      }
       toast.success('Đã đánh dấu đã đóng!')
     } finally {
       setPendingBills(prev => { const s = new Set(prev); s.delete(billId); return s })
@@ -75,7 +86,7 @@ export default function BillsPage() {
       )}
 
       <FAB onClick={() => setSheetOpen(true)} />
-      {room && <AddBillSheet open={sheetOpen} onClose={() => setSheetOpen(false)} roomId={room.id} />}
+      {room && user && <AddBillSheet open={sheetOpen} onClose={() => setSheetOpen(false)} roomId={room.id} currentUserId={user.uid} />}
       {room && selectedBillId && (() => {
         const bill = bills.find(b => b.id === selectedBillId)
         if (!bill) return null

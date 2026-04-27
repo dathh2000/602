@@ -4,6 +4,7 @@ import { doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore'
 import { expensesCol } from '@/src/lib/firebase/collections'
 import { Avatar } from '@/src/components/ui/Avatar'
 import { formatVND } from '@/src/lib/utils'
+import { logActivity } from '@/src/lib/activity'
 import type { DebtEdge, Member, Expense } from '@/src/types'
 import toast from 'react-hot-toast'
 
@@ -158,6 +159,13 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
         }
       }
       await Promise.all(updates)
+      await logActivity(roomId, {
+        type: 'debt.settled',
+        actorId: debt.from,
+        title: `🤝 Đã thanh toán nợ`,
+        body: `${fromMember?.displayName ?? '?'} đã trả ${toMember?.displayName ?? '?'} ${formatVND(debt.amount)}`,
+        meta: { debtFrom: debt.from, debtTo: debt.to, amount: debt.amount },
+      })
       toast.success('Đã đánh dấu thanh toán!')
     } catch {
       toast.error('Có lỗi xảy ra')

@@ -4,13 +4,14 @@ import { addDoc, serverTimestamp } from 'firebase/firestore'
 import { billsCol } from '@/src/lib/firebase/collections'
 import { BottomSheet } from '@/src/components/ui/BottomSheet'
 import { ImageUpload } from '@/src/components/ui/ImageUpload'
-import { formatAmountInput, parseAmountInput } from '@/src/lib/utils'
+import { formatAmountInput, formatVND, parseAmountInput } from '@/src/lib/utils'
+import { logActivity } from '@/src/lib/activity'
 import type { BillCategory } from '@/src/types'
 import toast from 'react-hot-toast'
 
-interface Props { open: boolean; onClose: () => void; roomId: string }
+interface Props { open: boolean; onClose: () => void; roomId: string; currentUserId: string }
 
-export function AddBillSheet({ open, onClose, roomId }: Props) {
+export function AddBillSheet({ open, onClose, roomId, currentUserId }: Props) {
   const [title, setTitle] = useState('')
   const [amount, setAmount] = useState('')
   const [dueDay, setDueDay] = useState('1')
@@ -31,7 +32,7 @@ export function AddBillSheet({ open, onClose, roomId }: Props) {
     if (day < 1 || day > 31) { toast.error('Ngày không hợp lệ (1-31)'); return }
     setSaving(true)
     try {
-      await addDoc(billsCol(roomId), {
+      const ref = await addDoc(billsCol(roomId), {
         title: title.trim(),
         amount: amt,
         dueDay: day,
@@ -40,6 +41,13 @@ export function AddBillSheet({ open, onClose, roomId }: Props) {
         active: true,
         createdAt: serverTimestamp(),
         ...(imageUrl ? { imageUrl } : {}),
+      })
+      await logActivity(roomId, {
+        type: 'bill.created',
+        actorId: currentUserId,
+        title: `📅 Hóa đơn mới: ${title.trim()}`,
+        body: `Hạn ngày ${day} hàng tháng · ${formatVND(amt)}`,
+        meta: { billId: ref.id, amount: amt },
       })
       toast.success('Đã thêm hóa đơn!')
       handleClose()

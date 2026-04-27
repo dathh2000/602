@@ -7,6 +7,7 @@ import { Avatar } from '@/src/components/ui/Avatar'
 import { Tag } from '@/src/components/ui/Tag'
 import { EditExpenseSheet } from '@/src/components/expense/EditExpenseSheet'
 import { ConfirmDialog } from '@/src/components/ui/ConfirmDialog'
+import { logActivity } from '@/src/lib/activity'
 import { formatVND, formatDate } from '@/src/lib/utils'
 import type { Expense, Member } from '@/src/types'
 import toast from 'react-hot-toast'
@@ -46,6 +47,17 @@ export function ExpenseDetailSheet({ open, onClose, expense, members, roomId, cu
         [`settlements.${userId}.paid`]: !currentPaid,
         [`settlements.${userId}.paidAt`]: !currentPaid ? serverTimestamp() : null,
       })
+      if (!currentPaid) {
+        const memberName = members.find(m => m.id === userId)?.displayName ?? '?'
+        const payerName = members.find(m => m.id === expense.paidBy)?.displayName ?? '?'
+        await logActivity(roomId, {
+          type: 'expense.settled',
+          actorId: currentUserId,
+          title: `✓ ${memberName} đã trả ${payerName}`,
+          body: `${expense.title} · ${formatVND(share)}`,
+          meta: { expenseId: expense.id, amount: share },
+        })
+      }
       toast.success(!currentPaid ? 'Đã đánh dấu đã trả' : 'Đã bỏ đánh dấu')
     } catch {
       toast.error('Có lỗi xảy ra')

@@ -8,6 +8,7 @@ import { BottomSheet } from '@/src/components/ui/BottomSheet'
 import { Avatar } from '@/src/components/ui/Avatar'
 import { ImageUpload } from '@/src/components/ui/ImageUpload'
 import { formatVND, formatAmountInput, parseAmountInput, currentYearMonth } from '@/src/lib/utils'
+import { logActivity } from '@/src/lib/activity'
 import type { Member, ExpenseCategory, Bill } from '@/src/types'
 import toast from 'react-hot-toast'
 
@@ -69,7 +70,7 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
         }])
       )
 
-      await addDoc(expensesCol(roomId), {
+      const expenseRef = await addDoc(expensesCol(roomId), {
         title: title.trim(),
         amount: amountNum,
         paidBy,
@@ -80,6 +81,15 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
         paidFromFund: useFund,
         settlements,
         ...(imageUrl ? { imageUrl } : {}),
+      })
+
+      const payerName = members.find(m => m.id === paidBy)?.displayName ?? '?'
+      await logActivity(roomId, {
+        type: 'expense.created',
+        actorId: currentUserId,
+        title: useFund ? `💰 Chi từ quỹ: ${title.trim()}` : `💸 Chi tiêu mới: ${title.trim()}`,
+        body: `${payerName} chi ${formatVND(amountNum)}${useFund ? ' (từ quỹ)' : ''}`,
+        meta: { expenseId: expenseRef.id, amount: amountNum },
       })
 
       if (useFund) {
@@ -104,12 +114,20 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
 
       if (selectedBillId) {
         const month = format(new Date(), 'yyyy-MM')
+        const bill = bills?.find(b => b.id === selectedBillId)
         await Promise.all([
           addDoc(billPaymentsCol(roomId, selectedBillId), {
             paid: true, paidAt: serverTimestamp(), paidBy: currentUserId, month,
           }),
           updateDoc(billDoc(roomId, selectedBillId), { lastPaidMonth: month }),
         ])
+        await logActivity(roomId, {
+          type: 'bill.paid',
+          actorId: currentUserId,
+          title: `✅ Đã đóng hóa đơn: ${bill?.title ?? ''}`,
+          body: `Tháng ${month} · ${formatVND(bill?.amount ?? amountNum)}`,
+          meta: { billId: selectedBillId, amount: bill?.amount ?? amountNum },
+        })
       }
 
       toast.success('Đã lưu chi tiêu!')

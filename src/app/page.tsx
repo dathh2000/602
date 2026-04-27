@@ -7,9 +7,13 @@ import { useBills } from '@/src/hooks/useBills'
 import { useDebts } from '@/src/hooks/useDebts'
 import { useFund } from '@/src/hooks/useFund'
 import { useAuth } from '@/src/hooks/useAuth'
+import { useActivities } from '@/src/hooks/useActivities'
+import { useFcmToken } from '@/src/hooks/useFcmToken'
 import { AddExpenseSheet } from '@/src/components/expense/AddExpenseSheet'
 import { ExpenseDetailSheet } from '@/src/components/expense/ExpenseDetailSheet'
 import { ExpenseCard } from '@/src/components/expense/ExpenseCard'
+import { ActivityBell } from '@/src/components/activity/ActivityBell'
+import { AnnouncementSheet } from '@/src/components/activity/AnnouncementSheet'
 import { FAB } from '@/src/components/layout/FAB'
 import { Tag } from '@/src/components/ui/Tag'
 import { LoadingScreen } from '@/src/components/ui/LoadingScreen'
@@ -23,7 +27,10 @@ export default function DashboardPage() {
   const bills = useBills(room?.id)
   const debts = useDebts(expenses, members)
   const { fund } = useFund(room?.id)
+  const { activities, unreadCount } = useActivities(room?.id, user?.uid)
+  useFcmToken(room?.id, user?.uid)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [announceOpen, setAnnounceOpen] = useState(false)
   const [selectedExpense, setSelectedExpense] = useState<typeof expenses[0] | null>(null)
 
   if (loading) return <LoadingScreen />
@@ -62,12 +69,27 @@ export default function DashboardPage() {
           <p className="text-xs opacity-80">🏠 {room.name}</p>
           <p className="font-bold text-lg">{members.length} thành viên →</p>
         </button>
-        <div className="text-right flex flex-col items-end gap-1">
-          <p className="text-xs opacity-80">Mã mời: <span className="font-bold tracking-widest">{room.inviteCode}</span></p>
-          <button onClick={() => signOut().then(() => window.location.href = '/login')}
-            className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded-lg">
-            Đăng xuất
+        <div className="flex items-center gap-2 shrink-0">
+          {user && (
+            <ActivityBell
+              roomId={room.id}
+              currentUserId={user.uid}
+              members={members}
+              activities={activities}
+              unreadCount={unreadCount}
+            />
+          )}
+          <button onClick={() => setAnnounceOpen(true)}
+            className="w-10 h-10 rounded-full bg-white/25 flex items-center justify-center text-lg active:bg-white/40">
+            📢
           </button>
+          <div className="text-right flex flex-col items-end gap-1 ml-1">
+            <p className="text-[10px] opacity-80 leading-tight">Mã mời<br/><span className="font-bold tracking-widest">{room.inviteCode}</span></p>
+            <button onClick={() => signOut().then(() => window.location.href = '/login')}
+              className="text-[10px] bg-white/20 hover:bg-white/30 px-2 py-0.5 rounded-lg">
+              Đăng xuất
+            </button>
+          </div>
         </div>
       </div>
 
@@ -133,6 +155,15 @@ export default function DashboardPage() {
           members={members}
           roomId={room.id}
           currentUserId={user.uid}
+        />
+      )}
+      {room && user && announceOpen && (
+        <AnnouncementSheet
+          open={announceOpen}
+          onClose={() => setAnnounceOpen(false)}
+          roomId={room.id}
+          currentUserId={user.uid}
+          members={members}
         />
       )}
     </main>

@@ -5,6 +5,7 @@ import { db } from '@/src/lib/firebase/config'
 import { fundDoc, fundTxCol } from '@/src/lib/firebase/collections'
 import { BottomSheet } from '@/src/components/ui/BottomSheet'
 import { formatVND, formatAmountInput, parseAmountInput } from '@/src/lib/utils'
+import { logActivity } from '@/src/lib/activity'
 import type { FundTxType, Member } from '@/src/types'
 import toast from 'react-hot-toast'
 
@@ -57,6 +58,15 @@ export function FundSheet({ open, onClose, roomId, currentUserId, members, curre
         relatedExpenseId: null, createdAt: serverTimestamp(),
       })
       await batch.commit()
+      const memberName = members.find(m => m.id === userId)?.displayName ?? '?'
+      const noteText = note.trim()
+      await logActivity(roomId, {
+        type: type === 'deposit' ? 'fund.deposit' : 'fund.withdraw',
+        actorId: currentUserId,
+        title: type === 'deposit' ? `💵 Nạp quỹ: ${formatVND(amountNum)}` : `💴 Rút quỹ: ${formatVND(amountNum)}`,
+        body: `${memberName}${noteText ? ` · ${noteText}` : ''} · Quỹ còn ${formatVND(preview)}`,
+        meta: { txId: newTxRef.id, amount: amountNum },
+      })
       toast.success(type === 'deposit' ? 'Đã nạp quỹ!' : 'Đã rút quỹ!')
       handleClose()
     } catch {

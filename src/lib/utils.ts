@@ -32,3 +32,16 @@ export function daysUntilDue(dueDay: number): number {
   if (due < now) due.setMonth(due.getMonth() + 1)
   return Math.ceil((due.getTime() - now.getTime()) / 86400000)
 }
+
+export function formatRelativeTime(date: Date): string {
+  const diff = Date.now() - date.getTime()
+  const sec = Math.floor(diff / 1000)
+  if (sec < 60) return 'vừa xong'
+  const min = Math.floor(sec / 60)
+  if (min < 60) return `${min} phút trước`
+  const hr = Math.floor(min / 60)
+  if (hr < 24) return `${hr} giờ trước`
+  const day = Math.floor(hr / 24)
+  if (day < 7) return `${day} ngày trước`
+  return new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit' }).format(date)
+}
