@@ -1,6 +1,7 @@
 import { Avatar } from '@/src/components/ui/Avatar'
 import { Tag } from '@/src/components/ui/Tag'
 import { formatVND, formatDate } from '@/src/lib/utils'
+import { hasCustomShares } from '@/src/lib/expense'
 import type { Expense, Member } from '@/src/types'
 
 interface Props { expense: Expense; members: Member[]; onClick?: () => void }
@@ -33,7 +34,9 @@ export function ExpenseCard({ expense, members, onClick }: Props) {
       <div className="text-right shrink-0 ml-2">
         <p className="font-bold text-sm text-red-500">{formatVND(expense.amount)}</p>
         {!expense.paidFromFund && expense.participants.length > 0 && (
-          <p className="text-xs text-gray-400">{formatVND(expense.amount / expense.participants.length)}/người</p>
+          hasCustomShares(expense)
+            ? <p className="text-xs text-gray-400">tùy chỉnh</p>
+            : <p className="text-xs text-gray-400">{formatVND(expense.amount / expense.participants.length)}/người</p>
         )}
         {onClick && <p className="text-[10px] text-gray-300 mt-1">chi tiết ›</p>}
       </div>

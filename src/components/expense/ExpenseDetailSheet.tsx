@@ -8,7 +8,7 @@ import { Tag } from '@/src/components/ui/Tag'
 import { EditExpenseSheet } from '@/src/components/expense/EditExpenseSheet'
 import { ConfirmDialog } from '@/src/components/ui/ConfirmDialog'
 import { logActivity } from '@/src/lib/activity'
-import { computeAllSettled } from '@/src/lib/expense'
+import { computeAllSettled, getShare, hasCustomShares } from '@/src/lib/expense'
 import { formatVND, formatDate } from '@/src/lib/utils'
 import type { Expense, Member } from '@/src/types'
 import toast from 'react-hot-toast'
@@ -34,7 +34,8 @@ export function ExpenseDetailSheet({ open, onClose, expense, members, roomId, cu
 
   const payer      = members.find(m => m.id === expense.paidBy)
   const payerIndex = members.findIndex(m => m.id === expense.paidBy)
-  const share      = expense.participants.length > 0 ? expense.amount / expense.participants.length : 0
+  const equalShare = expense.participants.length > 0 ? expense.amount / expense.participants.length : 0
+  const isCustomShares = hasCustomShares(expense)
   const allSettled = expense.participants.every(p => expense.settlements[p]?.paid)
   const anyNonPayerPaid = expense.participants
     .filter(p => p !== expense.paidBy)
@@ -59,12 +60,13 @@ export function ExpenseDetailSheet({ open, onClose, expense, members, roomId, cu
       if (!currentPaid) {
         const memberName = members.find(m => m.id === userId)?.displayName ?? '?'
         const payerName = members.find(m => m.id === expense.paidBy)?.displayName ?? '?'
+        const userShare = getShare(expense, userId)
         await logActivity(roomId, {
           type: 'expense.settled',
           actorId: currentUserId,
           title: `✓ ${memberName} đã trả ${payerName}`,
-          body: `${expense.title} · ${formatVND(share)}`,
-          meta: { expenseId: expense.id, amount: share },
+          body: `${expense.title} · ${formatVND(userShare)}`,
+          meta: { expenseId: expense.id, amount: userShare },
         })
       }
       toast.success(!currentPaid ? 'Đã đánh dấu đã trả' : 'Đã bỏ đánh dấu')
@@ -130,7 +132,10 @@ export function ExpenseDetailSheet({ open, onClose, expense, members, roomId, cu
           {!expense.paidFromFund && expense.participants.length > 0 && (
             <div>
               <p className="text-xs text-amber-700 font-bold uppercase mb-2">
-                Chia cho {expense.participants.length} người · {formatVND(share)}/người
+                Chia cho {expense.participants.length} người
+                {isCustomShares
+                  ? <span className="ml-1 normal-case font-normal">· tùy chỉnh</span>
+                  : <span className="ml-1 normal-case font-normal">· {formatVND(equalShare)}/người</span>}
               </p>
               <div className="space-y-2">
                 {expense.participants.map(uid => {
@@ -148,7 +153,7 @@ export function ExpenseDetailSheet({ open, onClose, expense, members, roomId, cu
                           {member?.displayName ?? '?'}
                           {isPayer && <span className="text-xs text-amber-500 ml-1">(người chi)</span>}
                         </p>
-                        <p className="text-xs text-gray-400">{formatVND(share)}</p>
+                        <p className="text-xs text-gray-400">{formatVND(getShare(expense, uid))}</p>
                       </div>
                       {isPaid
                         ? <span className="text-green-600 text-xs font-bold">✓ Đã trả</span>
@@ -190,7 +195,7 @@ export function ExpenseDetailSheet({ open, onClose, expense, members, roomId, cu
               {members.find(x => x.id === confirming.uid)?.displayName ?? '?'}
             </span>
             {confirming.isPaid ? ' chưa trả' : ' đã trả'}{' '}
-            <span className="font-extrabold text-red-500">{formatVND(share)}</span>
+            <span className="font-extrabold text-red-500">{formatVND(getShare(expense, confirming.uid))}</span>
             {' '}cho{' '}
             <span className="font-semibold text-gray-700">{payer?.displayName ?? '?'}</span>
           </>

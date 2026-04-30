@@ -9,7 +9,7 @@ import { formatVND } from '@/src/lib/utils'
 
 export default function DebtsPage() {
   const { room, members, loading } = useRoom()
-  const unsettledExpenses = useExpensesUnsettled(room?.id)
+  const { expenses: unsettledExpenses } = useExpensesUnsettled(room?.id)
   const debts = useDebts(unsettledExpenses, members)
   const { expenses: recent } = useExpenses(room?.id, 20)
 

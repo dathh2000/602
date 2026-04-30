@@ -9,6 +9,7 @@ import { useExpenses } from '@/src/hooks/useExpenses'
 import { useFund } from '@/src/hooks/useFund'
 import { LoadingScreen } from '@/src/components/ui/LoadingScreen'
 import { formatVND } from '@/src/lib/utils'
+import { getShare } from '@/src/lib/expense'
 import toast from 'react-hot-toast'
 
 const COLORS = ['bg-amber-400', 'bg-blue-400', 'bg-purple-400', 'bg-green-400', 'bg-red-400']
@@ -35,7 +36,7 @@ export default function MembersPage() {
       .reduce((s, e) => s + e.amount, 0)
     const owed = expenses
       .filter(e => !e.paidFromFund && e.participants.includes(m.id) && !e.settlements[m.id]?.paid && e.paidBy !== m.id)
-      .reduce((s, e) => s + e.amount / (e.participants.length || 1), 0)
+      .reduce((s, e) => s + getShare(e, m.id), 0)
     const deposited = transactions
       .filter(t => t.type === 'deposit' && t.userId === m.id)
       .reduce((s, t) => s + t.amount, 0)

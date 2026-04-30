@@ -13,12 +13,18 @@ export const metadata: Metadata = {
   icons: {
     apple: '/icons/icon-192.png',
   },
+  appleWebApp: {
+    capable: true,
+    title: 'Phòng trọ',
+    statusBarStyle: 'black-translucent',
+  },
 }
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+  themeColor: '#f59e0b',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

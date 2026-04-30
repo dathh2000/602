@@ -63,6 +63,9 @@ export interface Expense {
   // true khi tất cả participant đã settled (hoặc paidFromFund). Maintained server-side
   // dùng để query bounded khi tính nợ. Có thể undefined cho doc cũ chưa migrate.
   allSettled?: boolean
+  // Custom share per participant (uid -> amount). Nếu undefined → chia đều amount/participants.length.
+  // Tổng các share phải bằng amount.
+  shares?: Record<string, number>
 }
 
 export interface Bill {

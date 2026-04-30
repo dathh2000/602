@@ -4,7 +4,7 @@ import { doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore'
 import { expensesCol } from '@/src/lib/firebase/collections'
 import { Avatar } from '@/src/components/ui/Avatar'
 import { formatVND } from '@/src/lib/utils'
-import { computeAllSettled } from '@/src/lib/expense'
+import { computeAllSettled, getShare } from '@/src/lib/expense'
 import { logActivity } from '@/src/lib/activity'
 import type { DebtEdge, Member, Expense, Settlement } from '@/src/types'
 import toast from 'react-hot-toast'
@@ -39,7 +39,7 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
     )
     .map(e => ({
       expense: e,
-      share: Math.round(e.amount / e.participants.length),
+      share: getShare(e, debt.from),
       isDirect: e.paidBy === debt.to,
     }))
 
@@ -53,13 +53,12 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
       !e.participants.every(p => e.settlements[p]?.paid)
     )
     .flatMap(e => {
-      const share = Math.round(e.amount / e.participants.length)
       return e.participants
         .filter(p => p !== debt.from && !e.settlements[p]?.paid)
         .map(p => ({
           expense: e,
           participant: p,
-          share,
+          share: getShare(e, p),
           isDirect: p === debt.to,
         }))
     })
@@ -96,7 +95,7 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
 
           // Tối giản: nếu khoản chi không phải do to chi → from đã trả thay payer cho to
           if (e.paidBy !== debt.to && e.paidBy !== debt.from) {
-            const share = Math.round(e.amount / e.participants.length)
+            const share = getShare(e, debt.from)
             const payerName = getMember(e.paidBy)?.displayName ?? '?'
             const newSettlements = Object.fromEntries(
               members.map(m => {
@@ -125,7 +124,6 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
         //    - to tham gia: đánh dấu đã trả (giảm nợ trực tiếp)
         //    - bên thứ 3 tham gia: tối giản chuyển nợ sang to → tạo khoản mới do to chi hộ
         if (e.paidBy === debt.from) {
-          const share = Math.round(e.amount / e.participants.length)
           for (const p of e.participants) {
             if (e.settlements[p]?.paid) continue
             if (p === debt.from) continue
@@ -135,6 +133,7 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
 
             // Nếu là bên thứ 3 → tạo khoản mới: to chi hộ p, p còn nợ to
             if (p !== debt.to) {
+              const share = getShare(e, p)
               const newSettlements = Object.fromEntries(
                 members.map(m => {
                   const isParticipant = m.id === p

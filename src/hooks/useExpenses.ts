@@ -16,6 +16,7 @@ export function useExpenses(roomId: string | undefined, pageSize?: number) {
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [pageLimit, setPageLimit] = useState<number | null>(pageSize ?? null)
   const [hasMore, setHasMore] = useState(true)
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     if (!roomId) return
@@ -31,6 +32,7 @@ export function useExpenses(roomId: string | undefined, pageSize?: number) {
         settlements: d.data().settlements ?? {},
       } as Expense)))
       if (pageLimit !== null) setHasMore(snap.size === pageLimit)
+      setLoaded(true)
     })
   }, [roomId, pageLimit])
 
@@ -39,5 +41,5 @@ export function useExpenses(roomId: string | undefined, pageSize?: number) {
     setPageLimit(p => (p ?? 0) + pageSize)
   }, [pageSize])
 
-  return { expenses, hasMore: pageSize ? hasMore : false, loadMore }
+  return { expenses, hasMore: pageSize ? hasMore : false, loadMore, loaded }
 }

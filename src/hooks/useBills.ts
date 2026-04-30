@@ -14,6 +14,7 @@ export function useBills(roomId: string | undefined, pageSize?: number) {
   const [bills, setBills] = useState<Bill[]>([])
   const [pageLimit, setPageLimit] = useState(pageSize ?? null)
   const [hasMore, setHasMore] = useState(true)
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     if (!roomId) return
@@ -25,6 +26,7 @@ export function useBills(roomId: string | undefined, pageSize?: number) {
       docs.sort((a, b) => a.dueDay - b.dueDay)
       setBills(docs)
       if (pageLimit !== null) setHasMore(snap.size === pageLimit)
+      setLoaded(true)
     })
   }, [roomId, pageLimit])
 
@@ -33,5 +35,5 @@ export function useBills(roomId: string | undefined, pageSize?: number) {
     setPageLimit(p => (p ?? 0) + pageSize)
   }, [pageSize])
 
-  return { bills, hasMore: pageSize ? hasMore : false, loadMore }
+  return { bills, hasMore: pageSize ? hasMore : false, loadMore, loaded }
 }

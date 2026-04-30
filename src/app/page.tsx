@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useRoom } from '@/src/hooks/useRoom'
 import { useExpenses } from '@/src/hooks/useExpenses'
@@ -19,15 +19,16 @@ import { FAB } from '@/src/components/layout/FAB'
 import { Tag } from '@/src/components/ui/Tag'
 import { LoadingScreen } from '@/src/components/ui/LoadingScreen'
 import { InfiniteScrollSentinel } from '@/src/components/ui/InfiniteScrollSentinel'
+import { fireAppReady } from '@/src/components/ui/Splash'
 import { formatVND, daysUntilDue, currentYearMonth } from '@/src/lib/utils'
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth()
   const router = useRouter()
   const { room, members, loading } = useRoom()
-  const { expenses, hasMore: hasMoreExpenses, loadMore: loadMoreExpenses } = useExpenses(room?.id, 10)
-  const unsettledExpenses = useExpensesUnsettled(room?.id)
-  const { bills } = useBills(room?.id)
+  const { expenses, hasMore: hasMoreExpenses, loadMore: loadMoreExpenses, loaded: expensesLoaded } = useExpenses(room?.id, 10)
+  const { expenses: unsettledExpenses, loaded: unsettledLoaded } = useExpensesUnsettled(room?.id)
+  const { bills, loaded: billsLoaded } = useBills(room?.id)
   const debts = useDebts(unsettledExpenses, members)
   const { fund } = useFund(room?.id)
   const { activities, unreadCount, hasMore: hasMoreActivities, loadMore: loadMoreActivities } = useActivities(room?.id, user?.uid)
@@ -35,6 +36,19 @@ export default function DashboardPage() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [announceOpen, setAnnounceOpen] = useState(false)
   const [selectedExpense, setSelectedExpense] = useState<typeof expenses[0] | null>(null)
+
+  // Fire app-ready khi: auth/room đã quyết, hoặc data hooks đã có snapshot đầu
+  useEffect(() => {
+    if (loading) return
+    if (!room) {
+      // không có phòng → màn hình "Bạn chưa có phòng" sẵn render được
+      fireAppReady()
+      return
+    }
+    if (expensesLoaded && unsettledLoaded && billsLoaded) {
+      fireAppReady()
+    }
+  }, [loading, room, expensesLoaded, unsettledLoaded, billsLoaded])
 
   if (loading) return <LoadingScreen />
 

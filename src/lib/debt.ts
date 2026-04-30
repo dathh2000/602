@@ -1,6 +1,11 @@
 // src/lib/debt.ts
 import type { Expense, DebtEdge } from '@/src/types'
+import { getShare } from '@/src/lib/expense'
 
+/**
+ * Tính toán nợ tối giản từ list expenses chưa hoàn tất.
+ * Hỗ trợ custom shares per participant (qua `expense.shares`).
+ */
 export function simplifyDebts(
   expenses: Expense[],
   members: Record<string, string>
@@ -10,17 +15,24 @@ export function simplifyDebts(
 
   for (const exp of expenses) {
     if (exp.paidFromFund) continue
-    const allSettled = exp.participants.every(p => exp.settlements[p]?.paid)
-    if (allSettled) continue
-
     if (exp.participants.length === 0) continue
-    const share = exp.amount / exp.participants.length
+    if (exp.allSettled === true) continue
+
+    // Payer paid full amount, mỗi participant nợ phần share của họ
+    balance[exp.paidBy] = (balance[exp.paidBy] ?? 0) + exp.amount
     for (const p of exp.participants) {
-      if (exp.settlements[p]?.paid) continue
-      balance[p] -= share
+      const share = getShare(exp, p)
+      balance[p] = (balance[p] ?? 0) - share
     }
-    const settledCount = exp.participants.filter(p => exp.settlements[p]?.paid).length
-    balance[exp.paidBy] += exp.amount - settledCount * share
+    // Settled non-payer: phần share đã trả lại payer (cancel out)
+    for (const p of exp.participants) {
+      if (p === exp.paidBy) continue
+      if (exp.settlements[p]?.paid) {
+        const share = getShare(exp, p)
+        balance[p] = (balance[p] ?? 0) + share
+        balance[exp.paidBy] = (balance[exp.paidBy] ?? 0) - share
+      }
+    }
   }
 
   const creditors = Object.entries(balance).filter(([, v]) => v > 0.5).map(([id, v]) => ({ id, v }))

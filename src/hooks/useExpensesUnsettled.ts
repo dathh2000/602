@@ -15,6 +15,7 @@ import type { Expense } from '@/src/types'
  */
 export function useExpensesUnsettled(roomId: string | undefined) {
   const [expenses, setExpenses] = useState<Expense[]>([])
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     if (!roomId) return
@@ -27,8 +28,9 @@ export function useExpensesUnsettled(roomId: string | undefined) {
         createdAt: d.data().createdAt?.toDate(),
         settlements: d.data().settlements ?? {},
       } as Expense)))
+      setLoaded(true)
     })
   }, [roomId])
 
-  return expenses
+  return { expenses, loaded }
 }

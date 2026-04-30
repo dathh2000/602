@@ -28,16 +28,52 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
   const [amount, setAmount] = useState('')
   const [paidBy, setPaidBy] = useState(currentUserId)
   const [participants, setParticipants] = useState<string[]>(members.map(m => m.id))
+  const [shareOverrides, setShareOverrides] = useState<Record<string, number>>({})
   const [useFund, setUseFund] = useState(false)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [selectedBillId, setSelectedBillId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   const amountNum = parseAmountInput(amount)
-  const share = participants.length > 0 ? amountNum / participants.length : 0
+  const equalShare = participants.length > 0 ? Math.round(amountNum / participants.length) : 0
+  const isCustom = Object.keys(shareOverrides).length > 0
+  const getDisplayShare = (uid: string) => shareOverrides[uid] ?? equalShare
+  const sharesSum = participants.reduce((s, uid) => s + getDisplayShare(uid), 0)
+  const sharesValid = participants.length === 0 || Math.abs(sharesSum - amountNum) <= participants.length
 
   function toggleParticipant(uid: string) {
-    setParticipants(prev => prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid])
+    if (participants.includes(uid)) {
+      setParticipants(prev => prev.filter(id => id !== uid))
+      setShareOverrides(prev => {
+        if (!(uid in prev)) return prev
+        const next = { ...prev }
+        delete next[uid]
+        return next
+      })
+    } else {
+      setParticipants(prev => [...prev, uid])
+      if (isCustom) {
+        // Đang trong custom mode → set tạm equalShare, user chỉnh tay
+        setShareOverrides(prev => ({ ...prev, [uid]: equalShare }))
+      }
+    }
+  }
+
+  function handleShareChange(uid: string, raw: string) {
+    const num = parseAmountInput(raw)
+    setShareOverrides(prev => {
+      if (Object.keys(prev).length === 0) {
+        // Lần đầu chỉnh → lock in tất cả current equal share để các ô khác không nhảy
+        const all: Record<string, number> = {}
+        for (const p of participants) all[p] = p === uid ? num : equalShare
+        return all
+      }
+      return { ...prev, [uid]: num }
+    })
+  }
+
+  function resetShares() {
+    setShareOverrides({})
   }
 
   function handleSelectBill(bill: Bill) {
@@ -53,6 +89,7 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
   function handleClose() {
     setTitle(''); setAmount(''); setUseFund(false); setImageUrl(null); setSelectedBillId(null)
     setParticipants(members.map(m => m.id))
+    setShareOverrides({})
     setPaidBy(currentUserId)
     onClose()
   }
@@ -61,6 +98,9 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
     if (!title.trim() || amountNum <= 0) { toast.error('Nhập đủ thông tin'); return }
     if (useFund && amountNum > fundBalance) { toast.error(`Quỹ không đủ (còn ${formatVND(fundBalance)})`); return }
     if (!useFund && participants.length === 0) { toast.error('Chọn ít nhất 1 người'); return }
+    if (!useFund && isCustom && !sharesValid) {
+      toast.error(`Tổng share ${formatVND(sharesSum)} chưa khớp ${formatVND(amountNum)}`); return
+    }
 
     setSaving(true)
     try {
@@ -73,6 +113,10 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
       const finalParticipants = useFund ? [] : participants
       const allSettled = useFund ? true : computeAllSettled(finalParticipants, settlements)
 
+      const sharesObject = !useFund && isCustom
+        ? Object.fromEntries(participants.map(uid => [uid, getDisplayShare(uid)]))
+        : null
+
       const expenseRef = await addDoc(expensesCol(roomId), {
         title: title.trim(),
         amount: amountNum,
@@ -84,6 +128,7 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
         paidFromFund: useFund,
         settlements,
         allSettled,
+        ...(sharesObject ? { shares: sharesObject } : {}),
         ...(imageUrl ? { imageUrl } : {}),
       })
 
@@ -136,7 +181,7 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
 
       toast.success('Đã lưu chi tiêu!')
       handleClose()
-    } catch (e) {
+    } catch {
       toast.error('Có lỗi xảy ra, thử lại')
     } finally {
       setSaving(false)
@@ -174,22 +219,43 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
 
       {!useFund && (
         <>
-          <label className="text-xs text-amber-700 font-semibold mb-2 block">CHIA CHO AI?</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs text-amber-700 font-semibold">CHIA CHO AI?</label>
+            {isCustom && (
+              <button onClick={resetShares}
+                className="text-[10px] text-amber-600 underline">↺ Chia đều lại</button>
+            )}
+          </div>
           <div className="bg-yellow-50 border-2 border-amber-200 rounded-xl p-2 mb-3 space-y-1">
             {members.map((m, i) => {
               const checked = participants.includes(m.id)
               return (
-                <button key={m.id} onClick={() => toggleParticipant(m.id)}
-                  className="w-full flex items-center gap-2 p-1">
-                  <div className={`w-4 h-4 rounded flex items-center justify-center border-2 text-xs ${checked ? 'bg-amber-400 border-amber-400 text-white' : 'border-amber-300'}`}>
-                    {checked ? '✓' : ''}
-                  </div>
-                  <Avatar name={m.displayName} index={i} />
-                  <span className="text-sm flex-1 text-left">{m.displayName}</span>
-                  {checked && <span className="text-xs text-amber-600 font-semibold">{formatVND(share)}</span>}
-                </button>
+                <div key={m.id} className="flex items-center gap-2 p-1">
+                  <button onClick={() => toggleParticipant(m.id)}
+                    className="flex items-center gap-2 flex-1 text-left">
+                    <div className={`w-4 h-4 rounded flex items-center justify-center border-2 text-xs ${checked ? 'bg-amber-400 border-amber-400 text-white' : 'border-amber-300'}`}>
+                      {checked ? '✓' : ''}
+                    </div>
+                    <Avatar name={m.displayName} index={i} />
+                    <span className="text-sm flex-1">{m.displayName}</span>
+                  </button>
+                  {checked && (
+                    <input
+                      value={formatAmountInput(String(getDisplayShare(m.id)))}
+                      onChange={e => handleShareChange(m.id, e.target.value)}
+                      inputMode="numeric"
+                      className="w-24 text-right text-xs font-semibold text-amber-700 bg-white border-2 border-amber-200 rounded-lg px-2 py-1"
+                    />
+                  )}
+                </div>
               )
             })}
+            {participants.length > 0 && (
+              <div className={`flex justify-between items-center pt-2 mt-1 border-t border-amber-200 text-xs font-bold ${sharesValid ? 'text-amber-700' : 'text-red-500'}`}>
+                <span>Tổng {isCustom ? '(tùy chỉnh)' : '(chia đều)'}</span>
+                <span>{formatVND(sharesSum)} / {formatVND(amountNum)}{!sharesValid && ' ⚠'}</span>
+              </div>
+            )}
           </div>
         </>
       )}
