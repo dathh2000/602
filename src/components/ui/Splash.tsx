@@ -49,14 +49,11 @@ export function Splash() {
 
   return (
     <div
-      className={`fixed inset-0 z-[999] bg-gradient-to-br from-amber-400 to-red-500 flex flex-col items-center justify-center text-white pointer-events-none transition-opacity duration-500 ${fading ? 'opacity-0' : 'opacity-100'}`}>
-      <div className="text-7xl mb-4 animate-bounce">🏠</div>
-      <h1 className="text-3xl font-extrabold tracking-tight">Phòng trọ</h1>
-      <p className="text-xs opacity-80 mt-1">Quản lý chi tiêu nhóm</p>
-      <div className="absolute bottom-10 flex gap-1.5">
-        <span className="w-2 h-2 rounded-full bg-white/70 animate-pulse [animation-delay:0ms]" />
-        <span className="w-2 h-2 rounded-full bg-white/70 animate-pulse [animation-delay:200ms]" />
-        <span className="w-2 h-2 rounded-full bg-white/70 animate-pulse [animation-delay:400ms]" />
+      className={`fixed inset-0 z-[999] bg-gradient-to-br from-amber-400 to-red-500 flex items-center justify-center pointer-events-none transition-opacity duration-500 ${fading ? 'opacity-0' : 'opacity-100'}`}>
+      <div className="flex gap-2">
+        <span className="w-3 h-3 rounded-full bg-white/80 animate-pulse [animation-delay:0ms]" />
+        <span className="w-3 h-3 rounded-full bg-white/80 animate-pulse [animation-delay:200ms]" />
+        <span className="w-3 h-3 rounded-full bg-white/80 animate-pulse [animation-delay:400ms]" />
       </div>
     </div>
   )
