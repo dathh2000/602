@@ -38,8 +38,8 @@ export default function MembersPage() {
       .filter(e => !e.paidFromFund && e.participants.includes(m.id) && !e.settlements[m.id]?.paid && e.paidBy !== m.id)
       .reduce((s, e) => s + getShare(e, m.id), 0)
     const deposited = transactions
-      .filter(t => t.type === 'deposit' && t.userId === m.id)
-      .reduce((s, t) => s + t.amount, 0)
+      .filter(t => t.userId === m.id && !t.relatedExpenseId)
+      .reduce((s, t) => s + (t.type === 'deposit' ? t.amount : -t.amount), 0)
     return { member: m, paid, owed, deposited }
   })
 

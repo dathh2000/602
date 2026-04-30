@@ -147,7 +147,11 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
         batch.set(fundDoc(roomId), { balance: increment(-amountNum) }, { merge: true })
         batch.set(newFundTxRef, {
           type: 'withdraw', amount: amountNum, userId: currentUserId,
-          note: title.trim(), relatedExpenseId: null, createdAt: serverTimestamp(),
+          note: title.trim(),
+          // Đánh dấu đây là chi tiêu từ quỹ (không phải rút cá nhân)
+          // → ContributionList sẽ bỏ qua, không tính vào đóng góp âm
+          relatedExpenseId: expenseRef.id,
+          createdAt: serverTimestamp(),
         })
         await batch.commit()
       }
