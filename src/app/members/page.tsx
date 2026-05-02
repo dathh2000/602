@@ -10,6 +10,7 @@ import { useFund } from '@/src/hooks/useFund'
 import { LoadingScreen } from '@/src/components/ui/LoadingScreen'
 import { formatVND } from '@/src/lib/utils'
 import { getShare } from '@/src/lib/expense'
+import { VN_BANKS, findBank } from '@/src/lib/banks'
 import toast from 'react-hot-toast'
 
 const COLORS = ['bg-amber-400', 'bg-blue-400', 'bg-purple-400', 'bg-green-400', 'bg-red-400']
@@ -23,6 +24,11 @@ export default function MembersPage() {
   const [editingName, setEditingName] = useState(false)
   const [newName, setNewName] = useState('')
   const [saving, setSaving] = useState(false)
+  const [editingBank, setEditingBank] = useState(false)
+  const [bankBin, setBankBin] = useState('')
+  const [accountNumber, setAccountNumber] = useState('')
+  const [accountName, setAccountName] = useState('')
+  const [savingBank, setSavingBank] = useState(false)
 
   if (loading) return <LoadingScreen />
 
@@ -56,6 +62,34 @@ export default function MembersPage() {
       toast.error('Có lỗi xảy ra')
     } finally {
       setSaving(false)
+    }
+  }
+
+  function startEditBank() {
+    setBankBin(me?.bankAccount?.bankBin ?? '')
+    setAccountNumber(me?.bankAccount?.accountNumber ?? '')
+    setAccountName(me?.bankAccount?.accountName ?? '')
+    setEditingBank(true)
+  }
+
+  async function handleSaveBank() {
+    if (!user || !room) return
+    if (!bankBin || !accountNumber.trim()) { toast.error('Chọn ngân hàng và nhập STK'); return }
+    setSavingBank(true)
+    try {
+      await updateDoc(doc(db, 'rooms', room.id, 'members', user.uid), {
+        bankAccount: {
+          bankBin,
+          accountNumber: accountNumber.trim(),
+          ...(accountName.trim() ? { accountName: accountName.trim() } : {}),
+        },
+      })
+      toast.success('Đã lưu tài khoản ngân hàng!')
+      setEditingBank(false)
+    } catch {
+      toast.error('Có lỗi xảy ra')
+    } finally {
+      setSavingBank(false)
     }
   }
 
@@ -130,6 +164,72 @@ export default function MembersPage() {
               </div>
             ) : null
           })()}
+        </div>
+      )}
+
+      {/* Bank account của bạn — để nhận chuyển khoản từ thành viên khác */}
+      {me && (
+        <div className="bg-white rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-amber-700 font-bold uppercase">🏦 Tài khoản ngân hàng</p>
+            {!editingBank && (
+              <button onClick={startEditBank}
+                className="text-xs text-amber-600 font-semibold underline">
+                {me.bankAccount ? 'Sửa' : '+ Thêm'}
+              </button>
+            )}
+          </div>
+
+          {!editingBank ? (
+            me.bankAccount ? (
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Ngân hàng</span>
+                  <span className="font-semibold">{findBank(me.bankAccount.bankBin)?.shortName ?? '?'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Số tài khoản</span>
+                  <span className="font-bold tracking-wider text-amber-700">{me.bankAccount.accountNumber}</span>
+                </div>
+                {me.bankAccount.accountName && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Tên TK</span>
+                    <span className="font-semibold uppercase">{me.bankAccount.accountName}</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400">
+                Chưa thêm. Thêm STK để các thành viên khác chuyển khoản trả nợ qua QR.
+              </p>
+            )
+          ) : (
+            <div className="space-y-2">
+              <select value={bankBin} onChange={e => setBankBin(e.target.value)}
+                className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm bg-yellow-50">
+                <option value="">— Chọn ngân hàng —</option>
+                {VN_BANKS.map(b => (
+                  <option key={b.bin} value={b.bin}>{b.shortName} — {b.name}</option>
+                ))}
+              </select>
+              <input value={accountNumber} onChange={e => setAccountNumber(e.target.value.replace(/\s/g, ''))}
+                placeholder="Số tài khoản" inputMode="numeric"
+                className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm bg-yellow-50 font-bold tracking-wider" />
+              <input value={accountName} onChange={e => setAccountName(e.target.value.toUpperCase())}
+                placeholder="Tên chủ TK (tuỳ chọn)"
+                className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm bg-yellow-50 uppercase" />
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => setEditingBank(false)}
+                  className="py-2 rounded-xl border-2 border-gray-200 text-xs font-bold text-gray-500">
+                  Huỷ
+                </button>
+                <button onClick={handleSaveBank} disabled={savingBank}
+                  className="py-2 rounded-xl bg-gradient-to-r from-amber-400 to-red-500 text-white text-xs font-bold disabled:opacity-50">
+                  {savingBank ? 'Đang lưu...' : 'Lưu'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

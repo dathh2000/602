@@ -6,6 +6,12 @@ export interface Member {
   zaloId?: string
   role: 'admin' | 'member'
   fcmTokens?: string[]
+  // Tài khoản ngân hàng để nhận chuyển khoản (VietQR)
+  bankAccount?: {
+    bankBin: string         // mã NAPAS BIN
+    accountNumber: string
+    accountName?: string
+  }
 }
 
 export type ActivityType =

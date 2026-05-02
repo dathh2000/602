@@ -10,6 +10,9 @@ import { ConfirmDialog } from '@/src/components/ui/ConfirmDialog'
 import { logActivity } from '@/src/lib/activity'
 import { computeAllSettled, getShare, hasCustomShares } from '@/src/lib/expense'
 import { formatVND, formatDate } from '@/src/lib/utils'
+import { buildVietQRUrl } from '@/src/lib/vietqr'
+import { findBank } from '@/src/lib/banks'
+import { saveOrShareImage } from '@/src/lib/saveImage'
 import type { Expense, Member } from '@/src/types'
 import toast from 'react-hot-toast'
 
@@ -186,29 +189,136 @@ export function ExpenseDetailSheet({ open, onClose, expense, members, roomId, cu
         />
       )}
 
-      <ConfirmDialog
-        open={!!confirming}
-        title={confirming?.isPaid ? 'Bỏ đánh dấu đã trả?' : 'Xác nhận đã trả?'}
-        message={confirming ? (
-          <>
-            <span className="font-semibold text-gray-700">
-              {members.find(x => x.id === confirming.uid)?.displayName ?? '?'}
-            </span>
-            {confirming.isPaid ? ' chưa trả' : ' đã trả'}{' '}
-            <span className="font-extrabold text-red-500">{formatVND(getShare(expense, confirming.uid))}</span>
-            {' '}cho{' '}
-            <span className="font-semibold text-gray-700">{payer?.displayName ?? '?'}</span>
-          </>
-        ) : ''}
-        loading={!!(confirming && updating === confirming.uid)}
-        onCancel={() => setConfirming(null)}
-        onConfirm={async () => {
-          if (!confirming) return
-          const { uid, isPaid } = confirming
-          setConfirming(null)
-          await toggleSettlement(uid, isPaid)
-        }}
-      />
+      {/* Bỏ đánh dấu — confirm đơn giản */}
+      {confirming?.isPaid && (
+        <ConfirmDialog
+          open={true}
+          title="Bỏ đánh dấu đã trả?"
+          message={
+            <>
+              <span className="font-semibold text-gray-700">
+                {members.find(x => x.id === confirming.uid)?.displayName ?? '?'}
+              </span>
+              {' chưa trả '}
+              <span className="font-extrabold text-red-500">{formatVND(getShare(expense, confirming.uid))}</span>
+              {' cho '}
+              <span className="font-semibold text-gray-700">{payer?.displayName ?? '?'}</span>
+            </>
+          }
+          loading={updating === confirming.uid}
+          onCancel={() => setConfirming(null)}
+          onConfirm={async () => {
+            const { uid, isPaid } = confirming
+            setConfirming(null)
+            await toggleSettlement(uid, isPaid)
+          }}
+        />
+      )}
+
+      {/* Đánh dấu đã trả — dialog có QR nếu payer có STK */}
+      {confirming && !confirming.isPaid && (() => {
+        const debtor = members.find(x => x.id === confirming.uid)
+        const recipientBank = payer?.bankAccount
+        const bankInfo = recipientBank ? findBank(recipientBank.bankBin) : null
+        const itemShare = getShare(expense, confirming.uid)
+        const qrUrl = recipientBank ? buildVietQRUrl({
+          bin: recipientBank.bankBin,
+          accountNumber: recipientBank.accountNumber,
+          amount: itemShare,
+          addInfo: `Tra ${expense.title} ${debtor?.displayName ?? ''}`.slice(0, 50),
+          accountName: recipientBank.accountName,
+        }) : null
+
+        async function copyAccount() {
+          if (!recipientBank) return
+          try {
+            await navigator.clipboard.writeText(recipientBank.accountNumber)
+            toast.success('Đã copy số TK')
+          } catch { toast.error('Không copy được') }
+        }
+
+        async function saveQR() {
+          if (!qrUrl) return
+          const fname = `vietqr-${payer?.displayName ?? 'transfer'}-${itemShare}.png`.replace(/\s+/g, '_')
+          const result = await saveOrShareImage(qrUrl, fname)
+          if (result === 'shared') toast.success('Mở được trình share')
+          else if (result === 'downloaded') toast.success('Đã tải ảnh QR')
+          else toast('Mở ảnh — long-press để lưu', { icon: '💡' })
+        }
+
+        return (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center px-4"
+            onClick={() => setConfirming(null)}>
+            <div className="absolute inset-0 bg-black/50" />
+            <div className="relative bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl max-h-[90vh] overflow-y-auto"
+              onClick={e => e.stopPropagation()}>
+              <p className="text-base font-extrabold text-gray-800 mb-1 text-center">Xác nhận đã trả?</p>
+              <p className="text-xs text-gray-500 text-center mb-3">
+                <span className="font-semibold text-gray-700">{debtor?.displayName ?? '?'}</span>
+                {' trả '}
+                <span className="font-extrabold text-red-500">{formatVND(itemShare)}</span>
+                {' cho '}
+                <span className="font-semibold text-gray-700">{payer?.displayName ?? '?'}</span>
+              </p>
+
+              {qrUrl ? (
+                <div className="mb-4">
+                  <div className="bg-amber-50 rounded-xl p-3 border-2 border-amber-200">
+                    <p className="text-[10px] text-amber-700 font-bold uppercase text-center mb-2">
+                      Quét QR bằng app ngân hàng
+                    </p>
+                    <img src={qrUrl} alt="VietQR" crossOrigin="anonymous"
+                      className="w-full max-w-[260px] mx-auto rounded-lg bg-white" />
+                    <button onClick={saveQR}
+                      className="w-full mt-2 bg-white border-2 border-amber-200 rounded-lg py-1.5 text-xs font-bold text-amber-700 active:bg-amber-100">
+                      💾 Lưu ảnh QR vào máy
+                    </button>
+                    <div className="mt-2 space-y-1 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Bank</span>
+                        <span className="font-semibold">{bankInfo?.shortName ?? '?'}</span>
+                      </div>
+                      <button onClick={copyAccount}
+                        className="w-full flex justify-between items-center bg-white rounded-lg px-2 py-1.5 border border-amber-100 active:bg-amber-50">
+                        <span className="text-gray-500">Số TK</span>
+                        <span className="font-bold tracking-wider text-amber-700">
+                          {recipientBank?.accountNumber} 📋
+                        </span>
+                      </button>
+                      {recipientBank?.accountName && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Tên TK</span>
+                          <span className="font-semibold uppercase">{recipientBank.accountName}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-4 bg-gray-50 rounded-xl p-3 text-xs text-gray-500 text-center">
+                  💡 {payer?.displayName ?? '?'} chưa thêm STK ngân hàng. Yêu cầu họ vào trang Thành viên để thêm.
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => setConfirming(null)}
+                  className="py-2 rounded-xl border-2 border-gray-200 text-sm font-bold text-gray-500">
+                  Huỷ
+                </button>
+                <button disabled={updating === confirming.uid}
+                  onClick={async () => {
+                    const { uid, isPaid } = confirming
+                    setConfirming(null)
+                    await toggleSettlement(uid, isPaid)
+                  }}
+                  className="py-2 rounded-xl bg-gradient-to-r from-amber-400 to-red-500 text-white text-sm font-bold disabled:opacity-50">
+                  {updating === confirming.uid ? '⏳ Đang lưu...' : '✓ Đã chuyển xong'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </>
   )
 }
