@@ -1,13 +1,12 @@
 'use client'
 import { useState } from 'react'
 import { addDoc, updateDoc, serverTimestamp, writeBatch, doc as fsDoc, increment } from 'firebase/firestore'
-import { format } from 'date-fns'
 import { db } from '@/src/lib/firebase/config'
-import { expensesCol, fundDoc, fundTxCol, billPaymentsCol, billDoc } from '@/src/lib/firebase/collections'
+import { expensesCol, fundDoc, fundTxCol, billDoc } from '@/src/lib/firebase/collections'
 import { BottomSheet } from '@/src/components/ui/BottomSheet'
 import { Avatar } from '@/src/components/ui/Avatar'
 import { ImageUpload } from '@/src/components/ui/ImageUpload'
-import { formatVND, formatAmountInput, parseAmountInput, currentYearMonth } from '@/src/lib/utils'
+import { formatVND, formatAmountInput, parseAmountInput } from '@/src/lib/utils'
 import { computeAllSettled } from '@/src/lib/expense'
 import { logActivity } from '@/src/lib/activity'
 import type { Member, ExpenseCategory, Bill } from '@/src/types'
@@ -156,29 +155,19 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
         await batch.commit()
       }
 
-      // Notify participants via Zalo (fire-and-forget, chỉ khi có người tham gia)
-      if (!useFund && participants.length > 0) {
-        fetch('/api/notifications/expense', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ roomId, expenseTitle: title.trim(), amount: amountNum, paidBy, participants }),
-        }).catch(() => {})
-      }
-
       if (selectedBillId) {
-        const month = format(new Date(), 'yyyy-MM')
         const bill = bills?.find(b => b.id === selectedBillId)
-        await Promise.all([
-          addDoc(billPaymentsCol(roomId, selectedBillId), {
-            paid: true, paidAt: serverTimestamp(), paidBy: currentUserId, month,
-          }),
-          updateDoc(billDoc(roomId, selectedBillId), { lastPaidMonth: month }),
-        ])
+        await updateDoc(billDoc(roomId, selectedBillId), {
+          paid: true,
+          paidAt: serverTimestamp(),
+          paidBy: currentUserId,
+          amount: bill?.amount ?? amountNum,
+        })
         await logActivity(roomId, {
           type: 'bill.paid',
           actorId: currentUserId,
           title: `✅ Đã đóng hóa đơn: ${bill?.title ?? ''}`,
-          body: `Tháng ${month} · ${formatVND(bill?.amount ?? amountNum)}`,
+          body: formatVND(bill?.amount ?? amountNum),
           meta: { billId: selectedBillId, amount: bill?.amount ?? amountNum },
         })
       }
@@ -264,11 +253,11 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
         </>
       )}
 
-      {bills && bills.filter(b => b.lastPaidMonth !== currentYearMonth()).length > 0 && (
+      {bills && bills.filter(b => b.paid !== true).length > 0 && (
         <>
           <label className="text-xs text-amber-700 font-semibold mb-2 block">GẮN VỚI HÓA ĐƠN (tuỳ chọn)</label>
           <div className="flex flex-wrap gap-2 mb-3">
-            {bills.filter(b => b.lastPaidMonth !== currentYearMonth()).map(b => (
+            {bills.filter(b => b.paid !== true).map(b => (
               <button key={b.id} onClick={() => handleSelectBill(b)}
                 className={`text-xs px-3 py-1.5 rounded-xl border-2 font-semibold transition-colors ${
                   selectedBillId === b.id

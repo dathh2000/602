@@ -39,6 +39,7 @@ export function AddBillSheet({ open, onClose, roomId, currentUserId }: Props) {
         category,
         notifyDaysBefore: parseInt(notifyDaysBefore),
         active: true,
+        paid: false,
         createdAt: serverTimestamp(),
         ...(imageUrl ? { imageUrl } : {}),
       })
@@ -46,7 +47,7 @@ export function AddBillSheet({ open, onClose, roomId, currentUserId }: Props) {
         type: 'bill.created',
         actorId: currentUserId,
         title: `📅 Hóa đơn mới: ${title.trim()}`,
-        body: `Hạn ngày ${day} hàng tháng · ${formatVND(amt)}`,
+        body: `Hạn ngày ${day} · ${formatVND(amt)}`,
         meta: { billId: ref.id, amount: amt },
       })
       toast.success('Đã thêm hóa đơn!')
@@ -59,10 +60,10 @@ export function AddBillSheet({ open, onClose, roomId, currentUserId }: Props) {
   }
 
   return (
-    <BottomSheet open={open} onClose={handleClose} title="📅 Thêm hóa đơn định kỳ">
+    <BottomSheet open={open} onClose={handleClose} title="📅 Thêm hóa đơn">
 
       <label className="text-xs text-amber-700 font-semibold">TÊN HÓA ĐƠN</label>
-      <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Tiền điện, tiền nước..."
+      <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Tiền nhà tháng 5, tiền điện..."
         className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm bg-yellow-50 mt-1 mb-3" />
 
       <div className="grid grid-cols-2 gap-2 mb-3">

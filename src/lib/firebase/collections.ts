@@ -7,7 +7,6 @@ export const membersCol = (roomId: string) => collection(db, 'rooms', roomId, 'm
 export const expensesCol = (roomId: string) => collection(db, 'rooms', roomId, 'expenses')
 export const billsCol = (roomId: string) => collection(db, 'rooms', roomId, 'bills')
 export const billDoc = (roomId: string, billId: string) => doc(db, 'rooms', roomId, 'bills', billId)
-export const billPaymentsCol = (roomId: string, billId: string) => collection(db, 'rooms', roomId, 'bills', billId, 'payments')
 export const fundDoc = (roomId: string) => doc(db, 'rooms', roomId, 'fund', 'data')
 export const fundTxCol = (roomId: string) => collection(db, 'rooms', roomId, 'fund', 'data', 'transactions')
 export const activitiesCol = (roomId: string) => collection(db, 'rooms', roomId, 'activities')

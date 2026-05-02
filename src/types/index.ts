@@ -77,14 +77,10 @@ export interface Bill {
   notifyDaysBefore: number
   active: boolean
   imageUrl?: string
-  lastPaidMonth?: string
-}
-
-export interface BillPayment {
-  id: string
-  paid: boolean
-  paidAt: Date | null
-  paidBy: string | null
+  // Bill là one-shot (không recurring). User tạo lại bill cho mỗi tháng.
+  paid?: boolean
+  paidAt?: Date | null
+  paidBy?: string | null
 }
 
 export interface FundTransaction {

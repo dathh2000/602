@@ -5,7 +5,7 @@ import { billDoc } from '@/src/lib/firebase/collections'
 import { BottomSheet } from '@/src/components/ui/BottomSheet'
 import { Tag } from '@/src/components/ui/Tag'
 import { EditBillSheet } from '@/src/components/bill/EditBillSheet'
-import { formatVND, daysUntilDue, currentYearMonth } from '@/src/lib/utils'
+import { formatVND, formatDate, daysUntilDue } from '@/src/lib/utils'
 import type { Bill } from '@/src/types'
 import toast from 'react-hot-toast'
 
@@ -28,7 +28,7 @@ export function BillDetailSheet({ open, onClose, bill, roomId }: Props) {
 
   const days   = daysUntilDue(bill.dueDay)
   const urgent = days <= 3
-  const isPaid = bill.lastPaidMonth === currentYearMonth()
+  const isPaid = bill.paid === true
 
   async function handleDelete() {
     setDeleting(true)
@@ -64,7 +64,7 @@ export function BillDetailSheet({ open, onClose, bill, roomId }: Props) {
             <div className="flex items-center gap-2 flex-wrap">
               <Tag label={CATEGORY_LABEL[bill.category] ?? '📌 Khác'} variant="yellow" />
               {isPaid
-                ? <Tag label="✓ Đã đóng tháng này" variant="green" />
+                ? <Tag label="✓ Đã đóng" variant="green" />
                 : <Tag label={urgent ? `⏰ ${days} ngày nữa` : `${days} ngày nữa`} variant={urgent ? 'red' : 'yellow'} />
               }
             </div>
@@ -85,16 +85,20 @@ export function BillDetailSheet({ open, onClose, bill, roomId }: Props) {
           <div className="bg-amber-50 rounded-xl p-3 space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-500">Hạn đóng</span>
-              <span className="font-semibold text-gray-800">Ngày {bill.dueDay} hàng tháng</span>
+              <span className="font-semibold text-gray-800">Ngày {bill.dueDay}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Số tiền</span>
+              <span className="font-semibold text-gray-800">{formatVND(bill.amount)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Nhắc trước</span>
               <span className="font-semibold text-gray-800">{bill.notifyDaysBefore} ngày</span>
             </div>
-            {bill.lastPaidMonth && (
+            {isPaid && bill.paidAt && (
               <div className="flex justify-between">
-                <span className="text-gray-500">Lần đóng cuối</span>
-                <span className="font-semibold text-green-600">Tháng {bill.lastPaidMonth}</span>
+                <span className="text-gray-500">Đã đóng</span>
+                <span className="font-semibold text-green-600">{formatDate(bill.paidAt)}</span>
               </div>
             )}
           </div>
@@ -125,7 +129,7 @@ export function BillDetailSheet({ open, onClose, bill, roomId }: Props) {
             onClick={e => e.stopPropagation()}>
             <p className="text-base font-extrabold text-gray-800 mb-1 text-center">Xoá hóa đơn?</p>
             <p className="text-xs text-gray-500 text-center mb-4">
-              Hóa đơn <span className="font-semibold text-gray-700">{bill.title}</span> sẽ bị ẩn khỏi danh sách định kỳ.
+              Hóa đơn <span className="font-semibold text-gray-700">{bill.title}</span> sẽ bị ẩn khỏi danh sách.
             </p>
             <div className="grid grid-cols-2 gap-2">
               <button onClick={() => setConfirming(false)}

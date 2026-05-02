@@ -27,53 +27,38 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
   const toIndex    = members.findIndex(m => m.id === debt.to)
   const getMember  = (id: string) => members.find(m => m.id === id)
 
-  // A) from tham gia — người khác đã chi (from chưa trả)
-  //    isDirect = người chi là debt.to (trực tiếp)
-  //    !isDirect = người chi là bên thứ 3, khoản nợ được tối giản hóa chuyển sang debt.to
-  const participantItems = expenses
+  // A) Khoản to chi — from tham gia chưa trả (cộng vào nợ from→to)
+  const directIn = expenses
     .filter(e =>
       !e.paidFromFund &&
-      e.paidBy !== debt.from &&
+      e.paidBy === debt.to &&
       e.participants.includes(debt.from) &&
       !e.settlements[debt.from]?.paid
     )
     .map(e => ({
       expense: e,
       share: getShare(e, debt.from),
-      isDirect: e.paidBy === debt.to,
     }))
 
-  // B) from đã chi hộ nhóm — phân tích từng người được hưởng
-  //    isDirect = người hưởng là debt.to → trực tiếp giảm nợ
-  //    !isDirect = người hưởng là bên thứ 3 → tối giản hóa: bên thứ 3 trả thẳng cho debt.to, từ bớt nợ
-  const payerShareItems = expenses
+  // B) Khoản from chi — to tham gia chưa trả (trừ vào nợ from→to)
+  //    Lưu ý: vì hybrid simplify, nếu cùng pair có cả 2 chiều (from→to và to→from)
+  //    thì direct net đã trừ trước; ở đây chỉ list chiều to nợ from còn lại.
+  const directOut = expenses
     .filter(e =>
       !e.paidFromFund &&
       e.paidBy === debt.from &&
-      !e.participants.every(p => e.settlements[p]?.paid)
+      e.participants.includes(debt.to) &&
+      !e.settlements[debt.to]?.paid
     )
-    .flatMap(e => {
-      return e.participants
-        .filter(p => p !== debt.from && !e.settlements[p]?.paid)
-        .map(p => ({
-          expense: e,
-          participant: p,
-          share: getShare(e, p),
-          isDirect: p === debt.to,
-        }))
-    })
+    .map(e => ({
+      expense: e,
+      share: getShare(e, debt.to),
+    }))
 
-  const directIn    = participantItems.filter(i => i.isDirect)
-  const reroutedIn  = participantItems.filter(i => !i.isDirect)
-  const directOut   = payerShareItems.filter(i => i.isDirect)
-  const reroutedOut = payerShareItems.filter(i => !i.isDirect)
+  const totalIn  = directIn.reduce((s, i) => s + i.share, 0)
+  const totalOut = directOut.reduce((s, i) => s + i.share, 0)
 
-  const totalIn     = participantItems.reduce((s, i) => s + i.share, 0)
-  const totalOut    = payerShareItems.reduce((s, i) => s + i.share, 0)
-  const directInSum = directIn.reduce((s, i) => s + i.share, 0)
-  const reroutedInSum = reroutedIn.reduce((s, i) => s + i.share, 0)
-
-  const hasUnsettled = directIn.length > 0
+  const hasUnsettled = directIn.length > 0 || totalIn - totalOut > 0.5
 
   async function handleSettle() {
     setSettling(true)
@@ -188,13 +173,11 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
   }
 
   // Công thức hiển thị
-  const formulaStr = (() => {
-    if (totalIn > 0 && totalOut > 0)
-      return `${formatVND(totalIn)} − ${formatVND(totalOut)}`
-    if (reroutedInSum > 0 && directInSum > 0)
-      return `${formatVND(directInSum)} + ${formatVND(reroutedInSum)}`
-    return null
-  })()
+  const formulaStr = totalIn > 0 && totalOut > 0
+    ? `${formatVND(totalIn)} − ${formatVND(totalOut)}`
+    : null
+
+  const itemsCount = directIn.length + directOut.length
 
   return (
     <div className="bg-white rounded-xl p-3 shadow-sm">
@@ -218,7 +201,7 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
       {/* Summary row */}
       <div className="flex justify-between items-center">
         <button onClick={() => setExpanded(!expanded)} className="text-xs text-gray-400 underline">
-          {participantItems.length} khoản {expanded ? '▲' : '▼'}
+          {itemsCount} khoản {expanded ? '▲' : '▼'}
         </button>
         <div className="flex items-center gap-2">
           {hasUnsettled && (
@@ -252,65 +235,25 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
             </div>
           )}
 
-          {/* A-Rerouted: bên thứ 3 chi cho from, nợ được chuyển sang to */}
-          {reroutedIn.length > 0 && (
-            <div>
-              <p className="text-[10px] font-bold text-orange-400 uppercase mb-1.5">
-                Người khác chi hộ → tối giản chuyển sang {toMember?.displayName}
-              </p>
-              <div className="space-y-2">
-                {reroutedIn.map(({ expense: e, share }) => {
-                  const payerName = getMember(e.paidBy)?.displayName ?? '?'
-                  return (
-                    <div key={e.id}>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 flex-1 pr-2 truncate">{e.title}</span>
-                        <span className="text-orange-400 font-semibold shrink-0">+{formatVND(share)}</span>
-                      </div>
-                      <p className="text-gray-400 mt-0.5 leading-tight">
-                        ↳ {payerName} chi → {fromMember?.displayName} lẽ ra nợ {payerName} {formatVND(share)} → tối giản: {fromMember?.displayName} trả thẳng {toMember?.displayName}
-                      </p>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* B: from chi hộ nhóm, phân tích từng phần */}
-          {payerShareItems.length > 0 && (
+          {/* B: from chi hộ — to tham gia → giảm nợ */}
+          {directOut.length > 0 && (
             <div>
               <p className="text-[10px] font-bold text-green-500 uppercase mb-1.5">
-                {fromMember?.displayName} đã chi hộ → trừ vào nợ
+                {fromMember?.displayName} đã chi hộ — {toMember?.displayName} tham gia
               </p>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {directOut.map(({ expense: e, share }) => (
-                  <div key={`${e.id}-d`}>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 flex-1 pr-2 truncate">{e.title} · phần {toMember?.displayName}</span>
-                      <span className="text-green-500 font-semibold shrink-0">−{formatVND(share)}</span>
-                    </div>
-                    <p className="text-gray-400 mt-0.5">↳ {toMember?.displayName} nợ {fromMember?.displayName} → trực tiếp giảm nợ</p>
+                  <div key={`${e.id}-d`} className="flex justify-between">
+                    <span className="text-gray-600 flex-1 pr-2 truncate">{e.title}</span>
+                    <span className="text-green-500 font-semibold shrink-0">−{formatVND(share)}</span>
                   </div>
                 ))}
-                {reroutedOut.map(({ expense: e, share, participant }) => {
-                  const pName = getMember(participant)?.displayName ?? '?'
-                  return (
-                    <div key={`${e.id}-${participant}`}>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 flex-1 pr-2 truncate">{e.title} · phần {pName}</span>
-                        <span className="text-green-500 font-semibold shrink-0">−{formatVND(share)}</span>
-                      </div>
-                      <p className="text-gray-400 mt-0.5 leading-tight">
-                        ↳ {pName} nợ {fromMember?.displayName} {formatVND(share)} → tối giản: {pName} trả thẳng {toMember?.displayName}
-                      </p>
-                    </div>
-                  )
-                })}
-                <div className="flex justify-between font-semibold text-green-500 border-t border-dashed border-green-100 pt-1">
-                  <span>Tổng trừ</span>
-                  <span>−{formatVND(totalOut)}</span>
-                </div>
+                {totalOut > 0 && (
+                  <div className="flex justify-between font-semibold text-green-500 border-t border-dashed border-green-100 pt-1">
+                    <span>Tổng trừ</span>
+                    <span>−{formatVND(totalOut)}</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
