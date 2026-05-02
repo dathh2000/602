@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore'
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { expensesCol } from '@/src/lib/firebase/collections'
 import { Avatar } from '@/src/components/ui/Avatar'
 import { formatVND } from '@/src/lib/utils'
@@ -9,7 +9,7 @@ import { logActivity } from '@/src/lib/activity'
 import { buildVietQRUrl } from '@/src/lib/vietqr'
 import { findBank } from '@/src/lib/banks'
 import { saveOrShareImage } from '@/src/lib/saveImage'
-import type { DebtEdge, Member, Expense, Settlement } from '@/src/types'
+import type { DebtEdge, Member, Expense } from '@/src/types'
 import toast from 'react-hot-toast'
 
 interface Props {
@@ -28,7 +28,6 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
   const toMember   = members.find(m => m.id === debt.to)
   const fromIndex  = members.findIndex(m => m.id === debt.from)
   const toIndex    = members.findIndex(m => m.id === debt.to)
-  const getMember  = (id: string) => members.find(m => m.id === id)
 
   // A) Khoản to chi — from tham gia chưa trả (cộng vào nợ from→to)
   const directIn = expenses
@@ -67,86 +66,34 @@ export function DebtCard({ debt, members, expenses, roomId }: Props) {
     setSettling(true)
     try {
       const updates: Promise<unknown>[] = []
-      const fromName = fromMember?.displayName ?? '?'
 
+      // CHỈ mark settlement của ĐÚNG cặp (from, to). Không động đến người thứ 3, không tạo synthetic.
+      // Quy tắc:
+      //   - Khoản `to` chi, `from` là participant chưa trả → mark from settled
+      //   - Khoản `from` chi, `to` là participant chưa trả → mark to settled
+      // Mọi expense khác: bỏ qua.
       for (const e of expenses) {
         if (e.paidFromFund) continue
 
-        // Tích lũy tất cả thay đổi settlement cho expense này, rồi update 1 lần với allSettled
-        const settlementUpdates: Record<string, Partial<Settlement>> = {}
+        const settlementUpdates: Record<string, true> = {}
         const projectedSettlements = { ...e.settlements }
 
-        // 1) from là người tham gia khoản người khác chi → đánh dấu đã trả
-        if (e.participants.includes(debt.from) && !e.settlements[debt.from]?.paid) {
-          settlementUpdates[debt.from] = { paid: true }
+        // Khoản `to` chi, `from` tham gia chưa trả
+        if (e.paidBy === debt.to
+            && e.participants.includes(debt.from)
+            && !e.settlements[debt.from]?.paid) {
+          settlementUpdates[debt.from] = true
           projectedSettlements[debt.from] = { paid: true, paidAt: new Date() }
-
-          // Tối giản: nếu khoản chi không phải do to chi → from đã trả thay payer cho to
-          if (e.paidBy !== debt.to && e.paidBy !== debt.from) {
-            const share = getShare(e, debt.from)
-            const payerName = getMember(e.paidBy)?.displayName ?? '?'
-            const newSettlements = Object.fromEntries(
-              members.map(m => {
-                const isParticipant = m.id === debt.to
-                const isPayer = m.id === e.paidBy
-                const paid = !isParticipant || isPayer
-                return [m.id, { paid, paidAt: null }]
-              })
-            )
-            updates.push(addDoc(expensesCol(roomId), {
-              title: `${e.title} (${fromName} trả thay ${payerName})`,
-              amount: share,
-              paidBy: e.paidBy,
-              participants: [debt.to],
-              category: e.category,
-              date: serverTimestamp(),
-              createdAt: serverTimestamp(),
-              paidFromFund: false,
-              settlements: newSettlements,
-              allSettled: computeAllSettled([debt.to], newSettlements),
-            }))
-          }
         }
 
-        // 2) from là người chi:
-        //    - to tham gia: đánh dấu đã trả (giảm nợ trực tiếp)
-        //    - bên thứ 3 tham gia: tối giản chuyển nợ sang to → tạo khoản mới do to chi hộ
-        if (e.paidBy === debt.from) {
-          for (const p of e.participants) {
-            if (e.settlements[p]?.paid) continue
-            if (p === debt.from) continue
-
-            settlementUpdates[p] = { paid: true }
-            projectedSettlements[p] = { paid: true, paidAt: new Date() }
-
-            // Nếu là bên thứ 3 → tạo khoản mới: to chi hộ p, p còn nợ to
-            if (p !== debt.to) {
-              const share = getShare(e, p)
-              const newSettlements = Object.fromEntries(
-                members.map(m => {
-                  const isParticipant = m.id === p
-                  const isPayer = m.id === debt.to
-                  const paid = !isParticipant || isPayer
-                  return [m.id, { paid, paidAt: null }]
-                })
-              )
-              updates.push(addDoc(expensesCol(roomId), {
-                title: `${e.title} (tối giản từ ${fromName})`,
-                amount: share,
-                paidBy: debt.to,
-                participants: [p],
-                category: e.category,
-                date: serverTimestamp(),
-                createdAt: serverTimestamp(),
-                paidFromFund: false,
-                settlements: newSettlements,
-                allSettled: computeAllSettled([p], newSettlements),
-              }))
-            }
-          }
+        // Khoản `from` chi, `to` tham gia chưa trả
+        if (e.paidBy === debt.from
+            && e.participants.includes(debt.to)
+            && !e.settlements[debt.to]?.paid) {
+          settlementUpdates[debt.to] = true
+          projectedSettlements[debt.to] = { paid: true, paidAt: new Date() }
         }
 
-        // Apply tích lũy + allSettled cho expense gốc
         const settlementKeys = Object.keys(settlementUpdates)
         if (settlementKeys.length > 0) {
           const updateData: Record<string, unknown> = {
