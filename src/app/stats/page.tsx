@@ -6,7 +6,7 @@ import { useBills } from '@/src/hooks/useBills'
 import { useFund } from '@/src/hooks/useFund'
 import { LoadingScreen } from '@/src/components/ui/LoadingScreen'
 import { Avatar } from '@/src/components/ui/Avatar'
-import { formatVND, formatVNDShort } from '@/src/lib/utils'
+import { formatVND, formatVNDShort, formatDate } from '@/src/lib/utils'
 import { EXPENSE_CATEGORIES } from '@/src/lib/expense'
 
 type Range = 'month' | 'all'
@@ -15,10 +15,16 @@ const CATEGORY_LABEL = Object.fromEntries(EXPENSE_CATEGORIES.map(c => [c.value, 
 
 function ymKey(date: Date | { toDate?: () => Date } | undefined | null): string {
   if (!date) return ''
-  // Defensive: accept Date hoặc Firestore Timestamp
   const d = date instanceof Date ? date : (typeof date.toDate === 'function' ? date.toDate() : null)
   if (!d) return ''
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function asDate(date: Date | { toDate?: () => Date } | undefined | null): Date | null {
+  if (!date) return null
+  if (date instanceof Date) return date
+  if (typeof date.toDate === 'function') return date.toDate()
+  return null
 }
 
 export default function StatsPage() {
@@ -40,6 +46,33 @@ export default function StatsPage() {
   const totalFromFund = filteredExpenses.filter(e => e.paidFromFund).reduce((s, e) => s + e.amount, 0)
   const totalPersonal = total - totalFromFund
 
+  // #2 So sánh tháng này vs tháng trước
+  const monthComparison = useMemo(() => {
+    const now = new Date()
+    const thisYM = ymKey(now)
+    const prevYM = ymKey(new Date(now.getFullYear(), now.getMonth() - 1, 1))
+    let thisAmt = 0, prevAmt = 0
+    for (const e of expenses) {
+      const k = ymKey(e.createdAt ?? null)
+      if (k === thisYM) thisAmt += e.amount
+      else if (k === prevYM) prevAmt += e.amount
+    }
+    const delta = thisAmt - prevAmt
+    const pct = prevAmt > 0 ? (delta / prevAmt) * 100 : 0
+    return { thisAmt, prevAmt, delta, pct, prevYM }
+  }, [expenses])
+
+  // #4 Trung bình ngày + dự đoán cho tháng hiện tại
+  const monthPace = useMemo(() => {
+    if (range !== 'month') return null
+    const now = new Date()
+    const daysPassed = now.getDate()
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+    const avgPerDay = daysPassed > 0 ? total / daysPassed : 0
+    const projected = avgPerDay * daysInMonth
+    return { avgPerDay, projected, daysPassed, daysInMonth }
+  }, [range, total])
+
   // Theo loại
   const byCategory = useMemo(() => {
     const map: Record<string, number> = {}
@@ -50,6 +83,29 @@ export default function StatsPage() {
       .map(([cat, amt]) => ({ cat, amt, pct: total > 0 ? (amt / total) * 100 : 0 }))
       .sort((a, b) => b.amt - a.amt)
   }, [filteredExpenses, total])
+
+  // #1 Top 5 chi tiêu lớn nhất
+  const top5 = useMemo(() => {
+    return [...filteredExpenses]
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 5)
+  }, [filteredExpenses])
+
+  // #3 Phân bố theo ngày trong tuần (T2-CN)
+  const byWeekday = useMemo(() => {
+    const labels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
+    const dayIdx = [1, 2, 3, 4, 5, 6, 0] // map: position → JS getDay()
+    const map: Record<number, number> = {}
+    for (const e of filteredExpenses) {
+      const d = asDate(e.createdAt ?? null)
+      if (!d) continue
+      const day = d.getDay()
+      map[day] = (map[day] ?? 0) + e.amount
+    }
+    const data = dayIdx.map((di, i) => ({ label: labels[i], amt: map[di] ?? 0 }))
+    const max = Math.max(...data.map(d => d.amt), 1)
+    return data.map(d => ({ ...d, pct: (d.amt / max) * 100 }))
+  }, [filteredExpenses])
 
   // Theo tháng (6 tháng gần)
   const byMonth = useMemo(() => {
@@ -70,17 +126,26 @@ export default function StatsPage() {
     return series.map(s => ({ ...s, pct: (s.amt / max) * 100 }))
   }, [expenses])
 
-  // Theo người chi
-  const byPayer = useMemo(() => {
+  // #5 Lịch sử quỹ 6 tháng (deposit - personal withdraw, bỏ qua tx liên quan expense)
+  const fundByMonth = useMemo(() => {
     const map: Record<string, number> = {}
-    for (const e of filteredExpenses) {
-      if (e.paidFromFund) continue
-      map[e.paidBy] = (map[e.paidBy] ?? 0) + e.amount
+    for (const t of transactions) {
+      if (t.relatedExpenseId) continue // bỏ qua chi từ quỹ (đó là tiền nhóm tiêu)
+      const k = ymKey(t.createdAt ?? null)
+      if (!k) continue
+      const delta = t.type === 'deposit' ? t.amount : -t.amount
+      map[k] = (map[k] ?? 0) + delta
     }
-    return members.map((m, i) => ({
-      member: m, index: i, amt: map[m.id] ?? 0,
-    })).sort((a, b) => b.amt - a.amt)
-  }, [filteredExpenses, members])
+    const months: string[] = []
+    const now = new Date()
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      months.push(ymKey(d))
+    }
+    const series = months.map(m => ({ month: m, amt: map[m] ?? 0 }))
+    const maxAbs = Math.max(...series.map(s => Math.abs(s.amt)), 1)
+    return series.map(s => ({ ...s, pct: (Math.abs(s.amt) / maxAbs) * 100 }))
+  }, [transactions])
 
   // Bill stats
   const billsPaidThisMonth = bills.filter(b => b.paid === true && ymKey(b.paidAt ?? null) === currentYM)
@@ -132,6 +197,54 @@ export default function StatsPage() {
         </div>
       </div>
 
+      {/* #2 So sánh tháng này vs trước */}
+      <div className="bg-white rounded-xl p-4 shadow-sm">
+        <p className="text-xs text-amber-700 font-bold uppercase mb-3">So với tháng trước</p>
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <div className="bg-amber-50 rounded-xl p-3 text-center">
+            <p className="text-[10px] text-gray-500 uppercase">Tháng này</p>
+            <p className="font-extrabold text-base text-red-500">{formatVNDShort(monthComparison.thisAmt)}</p>
+          </div>
+          <div className="bg-gray-50 rounded-xl p-3 text-center">
+            <p className="text-[10px] text-gray-500 uppercase">{`Tháng trước (${monthComparison.prevYM.slice(5)})`}</p>
+            <p className="font-extrabold text-base text-gray-600">{formatVNDShort(monthComparison.prevAmt)}</p>
+          </div>
+        </div>
+        {monthComparison.prevAmt > 0 ? (
+          <div className={`text-center rounded-xl p-2 text-sm font-bold ${
+            monthComparison.delta > 0 ? 'bg-red-50 text-red-600' : monthComparison.delta < 0 ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-500'
+          }`}>
+            {monthComparison.delta > 0 ? '↑' : monthComparison.delta < 0 ? '↓' : '='}{' '}
+            {Math.abs(monthComparison.pct).toFixed(0)}%
+            {' · '}
+            {monthComparison.delta > 0 ? '+' : ''}{formatVNDShort(monthComparison.delta)}
+          </div>
+        ) : (
+          <p className="text-center text-xs text-gray-400">Chưa có dữ liệu tháng trước</p>
+        )}
+      </div>
+
+      {/* #4 Trung bình ngày + dự đoán (chỉ show trong 'month') */}
+      {monthPace && (
+        <div className="bg-white rounded-xl p-4 shadow-sm">
+          <p className="text-xs text-amber-700 font-bold uppercase mb-3">Pace tháng này</p>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Đã qua</span>
+              <span className="font-semibold">{monthPace.daysPassed}/{monthPace.daysInMonth} ngày</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Trung bình/ngày</span>
+              <span className="font-extrabold text-amber-700">{formatVND(monthPace.avgPerDay)}</span>
+            </div>
+            <div className="flex justify-between border-t border-amber-100 pt-2">
+              <span className="text-gray-500">Dự kiến cả tháng</span>
+              <span className="font-extrabold text-red-500">{formatVND(monthPace.projected)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Theo loại */}
       {byCategory.length > 0 && (
         <div className="bg-white rounded-xl p-4 shadow-sm">
@@ -148,9 +261,60 @@ export default function StatsPage() {
         </div>
       )}
 
-      {/* Theo tháng */}
+      {/* #1 Top 5 chi tiêu lớn nhất */}
+      {top5.length > 0 && (
+        <div className="bg-white rounded-xl p-4 shadow-sm">
+          <p className="text-xs text-amber-700 font-bold uppercase mb-3">🔝 Top 5 chi tiêu lớn nhất</p>
+          <div className="space-y-2">
+            {top5.map((e, idx) => {
+              const payer = members.find(m => m.id === e.paidBy)
+              const payerIdx = members.findIndex(m => m.id === e.paidBy)
+              return (
+                <div key={e.id} className="flex items-center gap-2">
+                  <span className="w-5 text-center text-xs font-bold text-amber-700">{idx + 1}</span>
+                  <Avatar name={payer?.displayName ?? '?'} index={payerIdx} size="sm" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 truncate">{e.title}</p>
+                    <p className="text-[10px] text-gray-400">
+                      {payer?.displayName ?? '?'} · {e.date ? formatDate(e.date) : ''}
+                    </p>
+                  </div>
+                  <span className="text-sm font-extrabold text-red-500 shrink-0">{formatVNDShort(e.amount)}</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* #3 Phân bố theo ngày trong tuần */}
+      {byWeekday.some(d => d.amt > 0) && (
+        <div className="bg-white rounded-xl p-4 shadow-sm">
+          <p className="text-xs text-amber-700 font-bold uppercase mb-3">Theo ngày trong tuần</p>
+          <div className="flex gap-1 items-end h-24 mb-1">
+            {byWeekday.map(({ label, amt, pct }) => (
+              <div key={label} className="flex-1 flex flex-col items-center justify-end">
+                <span className="text-[9px] text-gray-400 mb-0.5">
+                  {amt > 0 ? formatVNDShort(amt) : ''}
+                </span>
+                <div className="w-full bg-gradient-to-t from-amber-400 to-red-400 rounded-t"
+                  style={{ height: `${Math.max(pct, amt > 0 ? 4 : 0)}%`, minHeight: amt > 0 ? '4px' : '0' }} />
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-1">
+            {byWeekday.map(({ label }) => (
+              <span key={label} className="flex-1 text-[10px] text-gray-500 text-center font-semibold">
+                {label}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Theo tháng (6 tháng gần) */}
       <div className="bg-white rounded-xl p-4 shadow-sm">
-        <p className="text-xs text-amber-700 font-bold uppercase mb-3">6 tháng gần đây</p>
+        <p className="text-xs text-amber-700 font-bold uppercase mb-3">Chi tiêu 6 tháng gần</p>
         <div className="space-y-2">
           {byMonth.map(({ month, amt, pct }) => (
             <Bar key={month}
@@ -162,30 +326,30 @@ export default function StatsPage() {
         </div>
       </div>
 
-      {/* Theo người chi */}
-      {byPayer.some(p => p.amt > 0) && (
+      {/* #5 Lịch sử quỹ 6 tháng */}
+      {fundByMonth.some(m => m.amt !== 0) && (
         <div className="bg-white rounded-xl p-4 shadow-sm">
-          <p className="text-xs text-amber-700 font-bold uppercase mb-3">Người chi nhiều nhất</p>
+          <p className="text-xs text-amber-700 font-bold uppercase mb-3">💰 Quỹ 6 tháng (nạp ròng)</p>
           <div className="space-y-2">
-            {byPayer.filter(p => p.amt > 0).map(({ member, index, amt }) => {
-              const max = byPayer[0].amt || 1
-              const pct = (amt / max) * 100
-              return (
-                <div key={member.id} className="flex items-center gap-2">
-                  <Avatar name={member.displayName} index={index} size="sm" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between text-xs mb-0.5">
-                      <span className="font-semibold truncate">{member.displayName}</span>
-                      <span className="font-bold text-amber-700 shrink-0">{formatVND(amt)}</span>
-                    </div>
-                    <div className="bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                      <div className="bg-purple-400 h-full rounded-full" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
+            {fundByMonth.map(({ month, amt, pct }) => (
+              <div key={month}>
+                <div className="flex justify-between text-xs mb-0.5">
+                  <span className="text-gray-700">{month}</span>
+                  <span className={`font-bold ${amt > 0 ? 'text-green-600' : amt < 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                    {amt > 0 ? '+' : amt < 0 ? '−' : ''}{formatVNDShort(Math.abs(amt))}
+                  </span>
                 </div>
-              )
-            })}
+                <div className="bg-gray-100 rounded-full h-2 overflow-hidden">
+                  <div className={`h-full rounded-full transition-all ${
+                    amt > 0 ? 'bg-green-400' : 'bg-red-400'
+                  }`} style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            ))}
           </div>
+          <p className="text-[10px] text-gray-400 mt-2 text-center">
+            Tổng nạp − rút cá nhân (không tính chi tiêu từ quỹ)
+          </p>
         </div>
       )}
 
@@ -248,4 +412,3 @@ function Bar({ label, value, pct, color }: { label: string; value: string; pct: 
     </div>
   )
 }
-
