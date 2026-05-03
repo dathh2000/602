@@ -1,4 +1,12 @@
-import type { Expense, Settlement } from '@/src/types'
+import type { Expense, ExpenseCategory, Settlement } from '@/src/types'
+
+export const EXPENSE_CATEGORIES: { value: ExpenseCategory; label: string }[] = [
+  { value: 'food',      label: '🍜 Đồ ăn'     },
+  { value: 'grocery',   label: '🛒 Đi chợ'    },
+  { value: 'transport', label: '🚗 Di chuyển' },
+  { value: 'repair',    label: '🔧 Sửa chữa'  },
+  { value: 'other',     label: '📌 Khác'      },
+]
 
 /**
  * Tính `allSettled` cho 1 expense:

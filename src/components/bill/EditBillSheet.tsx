@@ -21,7 +21,9 @@ export function EditBillSheet({ open, onClose, bill, roomId }: Props) {
   const [dueDay, setDueDay]                     = useState(String(bill.dueDay))
   const [category, setCategory]                 = useState<BillCategory>(bill.category)
   const [notifyDaysBefore, setNotifyDaysBefore] = useState(String(bill.notifyDaysBefore))
-  const [imageUrl, setImageUrl]                 = useState<string | null>(bill.imageUrl ?? null)
+  const [imageUrls, setImageUrls]               = useState<string[]>(
+    bill.imageUrls && bill.imageUrls.length > 0 ? bill.imageUrls : bill.imageUrl ? [bill.imageUrl] : []
+  )
   const [saving, setSaving]                     = useState(false)
 
   async function handleSave() {
@@ -38,7 +40,7 @@ export function EditBillSheet({ open, onClose, bill, roomId }: Props) {
         dueDay: day,
         category,
         notifyDaysBefore: parseInt(notifyDaysBefore),
-        imageUrl: imageUrl ?? null,
+        imageUrls,
       })
       toast.success('Đã cập nhật hóa đơn!')
       onClose()
@@ -88,7 +90,7 @@ export function EditBillSheet({ open, onClose, bill, roomId }: Props) {
 
       <label className="text-xs text-amber-700 font-semibold mb-2 block">ẢNH HÓA ĐƠN (tuỳ chọn)</label>
       <div className="mb-4">
-        <ImageUpload key={bill.id} initialUrl={bill.imageUrl ?? null} onUploaded={setImageUrl} />
+        <ImageUpload value={imageUrls} onChange={setImageUrls} max={5} />
       </div>
 
       <button onClick={handleSave} disabled={saving}

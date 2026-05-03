@@ -1,5 +1,5 @@
 import { Tag } from '@/src/components/ui/Tag'
-import { formatVND, daysUntilDue } from '@/src/lib/utils'
+import { formatVND, daysUntilDue, getImages } from '@/src/lib/utils'
 import type { Bill } from '@/src/types'
 
 const BILL_ICONS: Record<string, string> = {
@@ -31,7 +31,10 @@ export function BillCard({ bill, onMarkPaid, onOpen, isPending }: Props) {
         <p className={`font-bold text-sm truncate ${isPaid ? 'text-gray-500 line-through' : 'text-gray-800'}`}>{bill.title}</p>
         <p className="text-xs text-gray-400">
           Hạn ngày {bill.dueDay}
-          {bill.imageUrl && <span className="ml-1 text-amber-500">📎</span>}
+          {(() => {
+            const n = getImages(bill).length
+            return n > 0 ? <span className="ml-1 text-amber-500">📎{n > 1 ? ` ${n}` : ''}</span> : null
+          })()}
         </p>
       </div>
       <div className="text-right">

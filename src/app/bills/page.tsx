@@ -26,7 +26,7 @@ export default function BillsPage() {
   const [selectedBillId, setSelectedBillId] = useState<string | null>(null)
   const [payingBill, setPayingBill] = useState<Bill | null>(null)
   const [payAmount, setPayAmount] = useState('')
-  const [payImageUrl, setPayImageUrl] = useState<string | null>(null)
+  const [payImageUrls, setPayImageUrls] = useState<string[]>([])
 
   if (loading) return <LoadingScreen />
 
@@ -40,13 +40,13 @@ export default function BillsPage() {
   function openPayDialog(bill: Bill) {
     setPayingBill(bill)
     setPayAmount(formatAmountInput(String(bill.amount)))
-    setPayImageUrl(null)
+    setPayImageUrls([])
   }
 
   function closePayDialog() {
     setPayingBill(null)
     setPayAmount('')
-    setPayImageUrl(null)
+    setPayImageUrls([])
   }
 
   async function confirmPay() {
@@ -63,7 +63,7 @@ export default function BillsPage() {
         paidAt: serverTimestamp(),
         paidBy: user.uid,
         amount: actualAmount,
-        ...(payImageUrl ? { imageUrl: payImageUrl } : {}),
+        ...(payImageUrls.length > 0 ? { imageUrls: payImageUrls } : {}),
       })
       await logActivity(room.id, {
         type: 'bill.paid',
@@ -149,9 +149,7 @@ export default function BillsPage() {
               ẢNH HÓA ĐƠN (tuỳ chọn)
             </label>
             <div className="mb-4">
-              <ImageUpload key={payingBill.id}
-                initialUrl={payingBill.imageUrl ?? null}
-                onUploaded={setPayImageUrl} />
+              <ImageUpload value={payImageUrls} onChange={setPayImageUrls} max={5} />
             </div>
 
             <div className="grid grid-cols-2 gap-2">

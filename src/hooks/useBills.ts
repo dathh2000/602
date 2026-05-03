@@ -22,7 +22,15 @@ export function useBills(roomId: string | undefined, pageSize?: number) {
     if (pageLimit !== null) constraints.push(limit(pageLimit))
     const q = query(billsCol(roomId), ...constraints)
     return onSnapshot(q, snap => {
-      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() } as Bill))
+      const docs = snap.docs.map(d => {
+        const data = d.data()
+        return {
+          id: d.id,
+          ...data,
+          // Convert Firestore Timestamp → Date
+          paidAt: data.paidAt?.toDate?.() ?? data.paidAt ?? null,
+        } as Bill
+      })
       docs.sort((a, b) => a.dueDay - b.dueDay)
       setBills(docs)
       if (pageLimit !== null) setHasMore(snap.size === pageLimit)

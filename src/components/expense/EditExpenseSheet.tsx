@@ -6,17 +6,9 @@ import { BottomSheet } from '@/src/components/ui/BottomSheet'
 import { Avatar } from '@/src/components/ui/Avatar'
 import { ImageUpload } from '@/src/components/ui/ImageUpload'
 import { formatVND, formatAmountInput, parseAmountInput } from '@/src/lib/utils'
-import { computeAllSettled } from '@/src/lib/expense'
+import { computeAllSettled, EXPENSE_CATEGORIES } from '@/src/lib/expense'
 import type { Expense, Member, ExpenseCategory } from '@/src/types'
 import toast from 'react-hot-toast'
-
-const CATEGORIES: { value: ExpenseCategory; label: string }[] = [
-  { value: 'food',      label: '🍜 Đồ ăn'    },
-  { value: 'grocery',   label: '🛒 Đi chợ'   },
-  { value: 'transport', label: '🚗 Di chuyển' },
-  { value: 'repair',    label: '🔧 Sửa chữa' },
-  { value: 'other',     label: '📌 Khác'      },
-]
 
 interface Props {
   open: boolean
@@ -36,7 +28,9 @@ export function EditExpenseSheet({ open, onClose, expense, members, roomId }: Pr
   const [shareOverrides, setShareOverrides] = useState<Record<string, number>>(
     expense.shares ? { ...expense.shares } : {}
   )
-  const [imageUrl, setImageUrl]     = useState<string | null>(expense.imageUrl ?? null)
+  const [imageUrls, setImageUrls]   = useState<string[]>(
+    expense.imageUrls && expense.imageUrls.length > 0 ? expense.imageUrls : expense.imageUrl ? [expense.imageUrl] : []
+  )
   const [saving, setSaving]         = useState(false)
 
   const amountNum = parseAmountInput(amount)
@@ -114,7 +108,9 @@ export function EditExpenseSheet({ open, onClose, expense, members, roomId }: Pr
         allSettled,
         // shares: nếu custom → write object; nếu reset về chia đều → xoá field
         shares: sharesObject ?? deleteField(),
-        imageUrl: imageUrl ?? deleteField(),
+        imageUrls,
+        // Dọn field legacy nếu doc cũ có
+        imageUrl: deleteField(),
         updatedAt: serverTimestamp(),
       })
 
@@ -143,7 +139,7 @@ export function EditExpenseSheet({ open, onClose, expense, members, roomId }: Pr
       <label className="text-xs text-amber-700 font-semibold">LOẠI</label>
       <select value={category} onChange={e => setCategory(e.target.value as ExpenseCategory)}
         className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm bg-yellow-50 mt-1 mb-3">
-        {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+        {EXPENSE_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
       </select>
 
       <label className="text-xs text-amber-700 font-semibold">NGƯỜI CHI</label>
@@ -198,7 +194,7 @@ export function EditExpenseSheet({ open, onClose, expense, members, roomId }: Pr
 
       <label className="text-xs text-amber-700 font-semibold mb-2 block">ẢNH ĐÍNH KÈM (tuỳ chọn)</label>
       <div className="mb-4">
-        <ImageUpload key={expense.id} initialUrl={expense.imageUrl ?? null} onUploaded={setImageUrl} />
+        <ImageUpload value={imageUrls} onChange={setImageUrls} max={5} />
       </div>
 
       <button onClick={handleSave} disabled={saving}

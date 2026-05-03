@@ -17,11 +17,11 @@ export function AddBillSheet({ open, onClose, roomId, currentUserId }: Props) {
   const [dueDay, setDueDay] = useState('1')
   const [category, setCategory] = useState<BillCategory>('other')
   const [notifyDaysBefore, setNotifyDaysBefore] = useState('3')
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [imageUrls, setImageUrls] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
 
   function handleClose() {
-    setTitle(''); setAmount(''); setImageUrl(null)
+    setTitle(''); setAmount(''); setImageUrls([])
     onClose()
   }
 
@@ -41,7 +41,7 @@ export function AddBillSheet({ open, onClose, roomId, currentUserId }: Props) {
         active: true,
         paid: false,
         createdAt: serverTimestamp(),
-        ...(imageUrl ? { imageUrl } : {}),
+        ...(imageUrls.length > 0 ? { imageUrls } : {}),
       })
       await logActivity(roomId, {
         type: 'bill.created',
@@ -96,7 +96,7 @@ export function AddBillSheet({ open, onClose, roomId, currentUserId }: Props) {
 
       <label className="text-xs text-amber-700 font-semibold mb-2 block">ẢNH HÓA ĐƠN (tuỳ chọn)</label>
       <div className="mb-4">
-        <ImageUpload onUploaded={setImageUrl} />
+        <ImageUpload value={imageUrls} onChange={setImageUrls} max={5} />
       </div>
 
       <button onClick={handleSave} disabled={saving}

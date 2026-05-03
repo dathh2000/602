@@ -5,7 +5,7 @@ import { billDoc } from '@/src/lib/firebase/collections'
 import { BottomSheet } from '@/src/components/ui/BottomSheet'
 import { Tag } from '@/src/components/ui/Tag'
 import { EditBillSheet } from '@/src/components/bill/EditBillSheet'
-import { formatVND, formatDate, daysUntilDue } from '@/src/lib/utils'
+import { formatVND, formatDate, daysUntilDue, getImages } from '@/src/lib/utils'
 import type { Bill } from '@/src/types'
 import toast from 'react-hot-toast'
 
@@ -71,15 +71,25 @@ export function BillDetailSheet({ open, onClose, bill, roomId }: Props) {
           </div>
 
           {/* Ảnh đính kèm */}
-          {bill.imageUrl && (
-            <div>
-              <p className="text-xs text-amber-700 font-bold uppercase mb-2">Ảnh hóa đơn</p>
-              <a href={bill.imageUrl} target="_blank" rel="noopener noreferrer">
-                <img src={bill.imageUrl} alt="bill"
-                  className="w-full rounded-xl object-cover max-h-64 border-2 border-amber-100" />
-              </a>
-            </div>
-          )}
+          {(() => {
+            const images = getImages(bill)
+            if (images.length === 0) return null
+            return (
+              <div>
+                <p className="text-xs text-amber-700 font-bold uppercase mb-2">
+                  Ảnh hóa đơn ({images.length})
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {images.map((url, i) => (
+                    <a key={url + i} href={url} target="_blank" rel="noopener noreferrer">
+                      <img src={url} alt={`bill ${i + 1}`}
+                        className="w-full aspect-square object-cover rounded-xl border-2 border-amber-100" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
 
           {/* Thông tin chi tiết */}
           <div className="bg-amber-50 rounded-xl p-3 space-y-2 text-sm">

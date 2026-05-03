@@ -7,7 +7,7 @@ import { BottomSheet } from '@/src/components/ui/BottomSheet'
 import { Avatar } from '@/src/components/ui/Avatar'
 import { ImageUpload } from '@/src/components/ui/ImageUpload'
 import { formatVND, formatAmountInput, parseAmountInput } from '@/src/lib/utils'
-import { computeAllSettled } from '@/src/lib/expense'
+import { computeAllSettled, EXPENSE_CATEGORIES } from '@/src/lib/expense'
 import { logActivity } from '@/src/lib/activity'
 import type { Member, ExpenseCategory, Bill } from '@/src/types'
 import toast from 'react-hot-toast'
@@ -28,8 +28,9 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
   const [paidBy, setPaidBy] = useState(currentUserId)
   const [participants, setParticipants] = useState<string[]>(members.map(m => m.id))
   const [shareOverrides, setShareOverrides] = useState<Record<string, number>>({})
+  const [category, setCategory] = useState<ExpenseCategory>('other')
   const [useFund, setUseFund] = useState(false)
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [imageUrls, setImageUrls] = useState<string[]>([])
   const [selectedBillId, setSelectedBillId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -86,10 +87,11 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
   }
 
   function handleClose() {
-    setTitle(''); setAmount(''); setUseFund(false); setImageUrl(null); setSelectedBillId(null)
+    setTitle(''); setAmount(''); setUseFund(false); setImageUrls([]); setSelectedBillId(null)
     setParticipants(members.map(m => m.id))
     setShareOverrides({})
     setPaidBy(currentUserId)
+    setCategory('other')
     onClose()
   }
 
@@ -121,14 +123,14 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
         amount: amountNum,
         paidBy,
         participants: finalParticipants,
-        category: 'other' as ExpenseCategory,
+        category,
         date: serverTimestamp(),
         createdAt: serverTimestamp(),
         paidFromFund: useFund,
         settlements,
         allSettled,
         ...(sharesObject ? { shares: sharesObject } : {}),
-        ...(imageUrl ? { imageUrl } : {}),
+        ...(imageUrls.length > 0 ? { imageUrls } : {}),
       })
 
       const payerName = members.find(m => m.id === paidBy)?.displayName ?? '?'
@@ -191,6 +193,12 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
       <label className="text-xs text-amber-700 font-semibold">SỐ TIỀN (₫)</label>
       <input value={amount} onChange={e => setAmount(formatAmountInput(e.target.value))} placeholder="90.000" inputMode="numeric"
         className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm bg-yellow-50 mt-1 mb-3 font-bold text-red-500" />
+
+      <label className="text-xs text-amber-700 font-semibold">LOẠI</label>
+      <select value={category} onChange={e => setCategory(e.target.value as ExpenseCategory)}
+        className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm bg-yellow-50 mt-1 mb-3">
+        {EXPENSE_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+      </select>
 
       <label className="text-xs text-amber-700 font-semibold">NGƯỜI CHI</label>
       <select value={paidBy} onChange={e => setPaidBy(e.target.value)}
@@ -273,7 +281,7 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
 
       <label className="text-xs text-amber-700 font-semibold mb-2 block">ẢNH ĐÍNH KÈM (tuỳ chọn)</label>
       <div className="mb-3">
-        <ImageUpload onUploaded={setImageUrl} />
+        <ImageUpload value={imageUrls} onChange={setImageUrls} max={5} />
       </div>
 
       <button onClick={handleSave} disabled={saving}

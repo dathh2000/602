@@ -65,7 +65,8 @@ export interface Expense {
   paidFromFund: boolean
   createdAt: Date
   settlements: Record<string, Settlement>
-  imageUrl?: string
+  imageUrl?: string       // legacy: ảnh đơn (đọc cho doc cũ, đọc qua getImages)
+  imageUrls?: string[]    // ảnh mới: tối đa 5
   // true khi tất cả participant đã settled (hoặc paidFromFund). Maintained server-side
   // dùng để query bounded khi tính nợ. Có thể undefined cho doc cũ chưa migrate.
   allSettled?: boolean
@@ -82,7 +83,8 @@ export interface Bill {
   category: BillCategory
   notifyDaysBefore: number
   active: boolean
-  imageUrl?: string
+  imageUrl?: string       // legacy: ảnh đơn
+  imageUrls?: string[]    // ảnh mới: tối đa 5
   // Bill là one-shot (không recurring). User tạo lại bill cho mỗi tháng.
   paid?: boolean
   paidAt?: Date | null

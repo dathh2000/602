@@ -9,7 +9,7 @@ import { EditExpenseSheet } from '@/src/components/expense/EditExpenseSheet'
 import { ConfirmDialog } from '@/src/components/ui/ConfirmDialog'
 import { logActivity } from '@/src/lib/activity'
 import { computeAllSettled, getShare, hasCustomShares } from '@/src/lib/expense'
-import { formatVND, formatDate } from '@/src/lib/utils'
+import { formatVND, formatDate, getImages } from '@/src/lib/utils'
 import { buildVietQRUrl } from '@/src/lib/vietqr'
 import { findBank } from '@/src/lib/banks'
 import { saveOrShareImage } from '@/src/lib/saveImage'
@@ -122,14 +122,25 @@ export function ExpenseDetailSheet({ open, onClose, expense, members, roomId, cu
           </div>
 
           {/* Ảnh đính kèm */}
-          {expense.imageUrl && (
-            <div>
-              <p className="text-xs text-amber-700 font-bold uppercase mb-2">Ảnh đính kèm</p>
-              <a href={expense.imageUrl} target="_blank" rel="noopener noreferrer">
-                <img src={expense.imageUrl} alt="receipt" className="w-full rounded-xl object-cover max-h-56 border-2 border-amber-100" />
-              </a>
-            </div>
-          )}
+          {(() => {
+            const images = getImages(expense)
+            if (images.length === 0) return null
+            return (
+              <div>
+                <p className="text-xs text-amber-700 font-bold uppercase mb-2">
+                  Ảnh đính kèm ({images.length})
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {images.map((url, i) => (
+                    <a key={url + i} href={url} target="_blank" rel="noopener noreferrer">
+                      <img src={url} alt={`receipt ${i + 1}`}
+                        className="w-full aspect-square object-cover rounded-xl border-2 border-amber-100" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
 
           {/* Participants */}
           {!expense.paidFromFund && expense.participants.length > 0 && (
