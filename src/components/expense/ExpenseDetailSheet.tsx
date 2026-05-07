@@ -121,6 +121,14 @@ export function ExpenseDetailSheet({ open, onClose, expense, members, roomId, cu
             <span className="ml-auto text-sm font-extrabold text-amber-700">{formatVND(expense.amount)}</span>
           </div>
 
+          {/* Ghi chú */}
+          {expense.note && (
+            <div className="bg-yellow-50 border-2 border-amber-100 rounded-xl px-3 py-2.5">
+              <p className="text-[10px] text-amber-600 font-bold uppercase mb-1">Ghi chú</p>
+              <p className="text-sm text-gray-700 whitespace-pre-wrap">{expense.note}</p>
+            </div>
+          )}
+
           {/* Ảnh đính kèm */}
           {(() => {
             const images = getImages(expense)

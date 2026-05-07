@@ -32,6 +32,7 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
   const [useFund, setUseFund] = useState(false)
   const [imageUrls, setImageUrls] = useState<string[]>([])
   const [selectedBillId, setSelectedBillId] = useState<string | null>(null)
+  const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
 
   const amountNum = parseAmountInput(amount)
@@ -87,7 +88,7 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
   }
 
   function handleClose() {
-    setTitle(''); setAmount(''); setUseFund(false); setImageUrls([]); setSelectedBillId(null)
+    setTitle(''); setAmount(''); setUseFund(false); setImageUrls([]); setSelectedBillId(null); setNote('')
     setParticipants(members.map(m => m.id))
     setShareOverrides({})
     setPaidBy(currentUserId)
@@ -131,6 +132,7 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
         allSettled,
         ...(sharesObject ? { shares: sharesObject } : {}),
         ...(imageUrls.length > 0 ? { imageUrls } : {}),
+        ...(note.trim() ? { note: note.trim() } : {}),
       })
 
       const payerName = members.find(m => m.id === paidBy)?.displayName ?? '?'
@@ -278,6 +280,11 @@ export function AddExpenseSheet({ open, onClose, roomId, members, currentUserId,
           </div>
         </>
       )}
+
+      <label className="text-xs text-amber-700 font-semibold">GHI CHÚ (tuỳ chọn)</label>
+      <textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Ghi chú thêm..."
+        rows={2}
+        className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm bg-yellow-50 mt-1 mb-3 resize-none" />
 
       <label className="text-xs text-amber-700 font-semibold mb-2 block">ẢNH ĐÍNH KÈM (tuỳ chọn)</label>
       <div className="mb-3">

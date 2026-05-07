@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { doc, updateDoc, serverTimestamp, deleteField } from 'firebase/firestore'
+import { doc, updateDoc, serverTimestamp, deleteField, type FieldValue } from 'firebase/firestore'
 import { expensesCol } from '@/src/lib/firebase/collections'
 import { BottomSheet } from '@/src/components/ui/BottomSheet'
 import { Avatar } from '@/src/components/ui/Avatar'
@@ -31,6 +31,7 @@ export function EditExpenseSheet({ open, onClose, expense, members, roomId }: Pr
   const [imageUrls, setImageUrls]   = useState<string[]>(
     expense.imageUrls && expense.imageUrls.length > 0 ? expense.imageUrls : expense.imageUrl ? [expense.imageUrl] : []
   )
+  const [note, setNote]             = useState(expense.note ?? '')
   const [saving, setSaving]         = useState(false)
 
   const amountNum = parseAmountInput(amount)
@@ -98,6 +99,10 @@ export function EditExpenseSheet({ open, onClose, expense, members, roomId }: Pr
         ? Object.fromEntries(participants.map(uid => [uid, getDisplayShare(uid)]))
         : null
 
+      const noteUpdate: { note: string | FieldValue } = note.trim()
+        ? { note: note.trim() }
+        : { note: deleteField() }
+
       await updateDoc(doc(expensesCol(roomId), expense.id), {
         title: title.trim(),
         amount: amountNum,
@@ -112,6 +117,7 @@ export function EditExpenseSheet({ open, onClose, expense, members, roomId }: Pr
         // Dọn field legacy nếu doc cũ có
         imageUrl: deleteField(),
         updatedAt: serverTimestamp(),
+        ...noteUpdate,
       })
 
       toast.success('Đã cập nhật chi tiêu!')
@@ -191,6 +197,11 @@ export function EditExpenseSheet({ open, onClose, expense, members, roomId }: Pr
           </div>
         </>
       )}
+
+      <label className="text-xs text-amber-700 font-semibold">GHI CHÚ (tuỳ chọn)</label>
+      <textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Ghi chú thêm..."
+        rows={2}
+        className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm bg-yellow-50 mt-1 mb-3 resize-none" />
 
       <label className="text-xs text-amber-700 font-semibold mb-2 block">ẢNH ĐÍNH KÈM (tuỳ chọn)</label>
       <div className="mb-4">

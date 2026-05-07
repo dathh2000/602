@@ -18,10 +18,11 @@ export function AddBillSheet({ open, onClose, roomId, currentUserId }: Props) {
   const [category, setCategory] = useState<BillCategory>('other')
   const [notifyDaysBefore, setNotifyDaysBefore] = useState('3')
   const [imageUrls, setImageUrls] = useState<string[]>([])
+  const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
 
   function handleClose() {
-    setTitle(''); setAmount(''); setImageUrls([])
+    setTitle(''); setAmount(''); setImageUrls([]); setNote('')
     onClose()
   }
 
@@ -42,6 +43,7 @@ export function AddBillSheet({ open, onClose, roomId, currentUserId }: Props) {
         paid: false,
         createdAt: serverTimestamp(),
         ...(imageUrls.length > 0 ? { imageUrls } : {}),
+        ...(note.trim() ? { note: note.trim() } : {}),
       })
       await logActivity(roomId, {
         type: 'bill.created',
@@ -93,6 +95,11 @@ export function AddBillSheet({ open, onClose, roomId, currentUserId }: Props) {
       <input value={notifyDaysBefore} onChange={e => setNotifyDaysBefore(e.target.value)}
         type="number" min="1" max="14"
         className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm bg-yellow-50 mt-1 mb-3" />
+
+      <label className="text-xs text-amber-700 font-semibold">GHI CHÚ (tuỳ chọn)</label>
+      <textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Ghi chú thêm..."
+        rows={2}
+        className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm bg-yellow-50 mt-1 mb-3 resize-none" />
 
       <label className="text-xs text-amber-700 font-semibold mb-2 block">ẢNH HÓA ĐƠN (tuỳ chọn)</label>
       <div className="mb-4">

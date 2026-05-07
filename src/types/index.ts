@@ -73,6 +73,7 @@ export interface Expense {
   // Custom share per participant (uid -> amount). Nếu undefined → chia đều amount/participants.length.
   // Tổng các share phải bằng amount.
   shares?: Record<string, number>
+  note?: string
 }
 
 export interface Bill {
@@ -89,6 +90,7 @@ export interface Bill {
   paid?: boolean
   paidAt?: Date | null
   paidBy?: string | null
+  note?: string
 }
 
 export interface FundTransaction {
