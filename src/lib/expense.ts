@@ -5,6 +5,7 @@ export const EXPENSE_CATEGORIES: { value: ExpenseCategory; label: string }[] = [
   { value: 'grocery',   label: '🛒 Đi chợ'    },
   { value: 'transport', label: '🚗 Di chuyển' },
   { value: 'repair',    label: '🔧 Sửa chữa'  },
+  { value: 'bill',      label: '🧾 Hóa đơn'  },
   { value: 'other',     label: '📌 Khác'      },
 ]
 

@@ -18,7 +18,7 @@ import toast from 'react-hot-toast'
 
 const CATEGORY_LABEL: Record<string, string> = {
   food: '🍜 Đồ ăn', grocery: '🛒 Đi chợ', transport: '🚗 Di chuyển',
-  repair: '🔧 Sửa chữa', other: '📌 Khác',
+  repair: '🔧 Sửa chữa', bill: '🧾 Hóa đơn', other: '📌 Khác',
 }
 
 interface Props {

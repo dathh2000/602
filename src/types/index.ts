@@ -45,7 +45,7 @@ export interface Activity {
   createdAt: Date
 }
 
-export type ExpenseCategory = 'food' | 'grocery' | 'transport' | 'repair' | 'other'
+export type ExpenseCategory = 'food' | 'grocery' | 'transport' | 'repair' | 'bill' | 'other'
 export type BillCategory = 'rent' | 'electric' | 'water' | 'internet' | 'other'
 export type FundTxType = 'deposit' | 'withdraw'
 
