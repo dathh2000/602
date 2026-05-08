@@ -24,8 +24,10 @@ html, body {
 }
 
 #scroll-root {
-  /* Scroll thực sự xảy ra ở đây — overscroll bị contain, không bubble ra body */
-  overscroll-behavior: contain;
+  /* Scroll thực sự xảy ra ở đây. `none` thay vì `contain` để tắt luôn rubber-band
+     trên iOS PWA — nếu chỉ contain thì inner container vẫn bounce, lộ cream body bg
+     ở trên đầu khi user kéo xuống quá top. */
+  overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
 }
 
