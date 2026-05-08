@@ -5,11 +5,7 @@ import crypto from 'node:crypto'
 
 interface FcmMessage {
   token: string
-  notification: { title: string; body: string }
-  data?: Record<string, string>
-  webpush?: {
-    fcm_options?: { link?: string }
-  }
+  data: Record<string, string>
 }
 
 interface SendResult {
@@ -98,14 +94,19 @@ export async function sendPushMulticast(
   data?: Record<string, string>,
 ): Promise<{ successCount: number; failureCount: number; results: { token: string; result: SendResult }[] }> {
   const accessToken = await getAccessToken()
+  // Data-only payload: avoids FCM SDK auto-displaying a notification in addition
+  // to the one our service worker shows from onBackgroundMessage (would duplicate).
+  const mergedData: Record<string, string> = {
+    ...(data ?? {}),
+    title: notification.title,
+    body: notification.body,
+  }
   const results = await Promise.all(
     tokens.map(async token => ({
       token,
       result: await sendOne(projectId, accessToken, {
         token,
-        notification,
-        data,
-        webpush: data?.link ? { fcm_options: { link: data.link } } : undefined,
+        data: mergedData,
       }),
     })),
   )

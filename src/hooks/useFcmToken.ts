@@ -22,8 +22,8 @@ export function useFcmToken(roomId: string | undefined, userId: string | undefin
           await updateDoc(doc(membersCol(roomId), userId), { fcmTokens: arrayUnion(token) })
         } catch { /* silent */ }
         unsub = await onForegroundMessage((payload) => {
-          const title = payload.notification?.title
-          const body  = payload.notification?.body
+          const title = payload.data?.title
+          const body  = payload.data?.body
           if (title) toast(`${title}${body ? ' — ' + body : ''}`, { icon: '🔔', duration: 4000 })
         })
       }

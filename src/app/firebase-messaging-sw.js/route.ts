@@ -22,10 +22,11 @@ self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()))
 
 messaging.onBackgroundMessage((payload) => {
-  const title = (payload.notification && payload.notification.title) || 'Phòng trọ'
-  const body  = (payload.notification && payload.notification.body)  || ''
-  const link  = (payload.data && payload.data.link) || '/'
-  const tag   = (payload.data && payload.data.tag) || (title + '|' + body)
+  const data  = payload.data || {}
+  const title = data.title || 'Phòng trọ'
+  const body  = data.body  || ''
+  const link  = data.link  || '/'
+  const tag   = data.tag   || (title + '|' + body)
   self.registration.showNotification(title, {
     body,
     icon: '/icons/icon-192.png',

@@ -63,7 +63,7 @@ function waitUntilActive(reg: ServiceWorkerRegistration): Promise<void> {
   })
 }
 
-export async function onForegroundMessage(handler: (payload: { notification?: { title?: string; body?: string }; data?: Record<string, string> }) => void): Promise<() => void> {
+export async function onForegroundMessage(handler: (payload: { data?: Record<string, string> }) => void): Promise<() => void> {
   const messaging = await getOrInitMessaging()
   if (!messaging) return () => {}
   return onMessage(messaging, handler)
