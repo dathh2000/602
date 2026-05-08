@@ -11,7 +11,11 @@ const cfg = {
   appId:             process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? '',
 }
 
-const SW_JS = `/* Auto-generated FCM service worker */
+// Build marker rotates each module load → SW script bytes change → iOS detects
+// new SW and activates the latest handler quickly instead of clinging to the cached one.
+const SW_BUILD = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+
+const SW_JS = `/* Auto-generated FCM service worker — build ${SW_BUILD} */
 importScripts('https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js')
 importScripts('https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging-compat.js')
 
@@ -21,13 +25,17 @@ const messaging = firebase.messaging()
 self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()))
 
+// Returning the showNotification Promise is REQUIRED on iOS Web Push:
+// Firebase forwards the return value to event.waitUntil(); without it the SW may
+// terminate before iOS commits the notification → iOS shows a generic placeholder
+// ("<App> from <origin>") with empty title/body.
 messaging.onBackgroundMessage((payload) => {
   const data  = payload.data || {}
   const title = data.title || 'Phòng trọ'
   const body  = data.body  || ''
   const link  = data.link  || '/'
   const tag   = data.tag   || (title + '|' + body)
-  self.registration.showNotification(title, {
+  return self.registration.showNotification(title, {
     body,
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
