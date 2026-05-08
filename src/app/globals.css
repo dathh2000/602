@@ -13,7 +13,12 @@
 }
 
 html, body {
+  /* iOS Safari PWA in standalone mode resolves `height: 100%` to the layout
+     viewport which can exclude the bottom home-indicator safe area, leaving
+     a white gap below the bottom nav. `100dvh` follows the dynamic visual
+     viewport correctly on iOS 16.4+. The 100% line is the legacy fallback. */
   height: 100%;
+  height: 100dvh;
   font-family: Arial, Helvetica, sans-serif;
   /* Khoá body: tránh iOS rubber-band overscroll lôi cả layout, không pull-to-refresh */
   overflow: hidden;
