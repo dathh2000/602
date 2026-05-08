@@ -16,7 +16,10 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: 'Phòng trọ',
-    statusBarStyle: 'black-translucent',
+    // No statusBarStyle: lets iOS use its default (opaque) status bar tinted by
+    // the manifest `theme_color` (#f59e0b orange) — visually merges with the
+    // orange page header. `black-translucent` was the previous setting and
+    // produced a cream gap above the header on fresh installs.
   },
 }
 
