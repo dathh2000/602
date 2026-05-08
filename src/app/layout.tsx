@@ -38,7 +38,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`${inter.className} bg-amber-50`}
         style={{ display: 'flex', flexDirection: 'column' }}>
-        <div id="scroll-root" style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' as const }}>
+        {/* paddingBottom reserves space for the fixed BottomNav: 56px nav body
+            (py-2 ≈ 8+16+8 + safe-area). Without it, the last list items are
+            hidden behind the nav. */}
+        <div id="scroll-root"
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch' as const,
+            paddingBottom: 'calc(56px + env(safe-area-inset-bottom))',
+          }}>
           <Providers>{children}</Providers>
         </div>
         <BottomNav />
