@@ -29,25 +29,13 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    // Height handled in globals.css (100% fallback + 100dvh). Setting inline
-    // `height: 100%` here previously overrode the CSS rule and broke iOS PWA
-    // viewport sizing → bottom-nav floated above the home indicator with a gap.
-    <html lang="vi">
+    <html lang="vi" style={{ height: '100%' }}>
       <head>
         <meta name="zalo-platform-site-verification" content="JVIt8AlzE2rrxxTpZDqNHLdGW4-rfbKLCJ8s" />
       </head>
       <body className={`${inter.className} bg-amber-50`}
-        style={{ display: 'flex', flexDirection: 'column' }}>
-        {/* paddingBottom reserves space for the fixed BottomNav: 56px nav body
-            (py-2 ≈ 8+16+8 + safe-area). Without it, the last list items are
-            hidden behind the nav. */}
-        <div id="scroll-root"
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            WebkitOverflowScrolling: 'touch' as const,
-            paddingBottom: 'calc(56px + env(safe-area-inset-bottom))',
-          }}>
+        style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div id="scroll-root" style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' as const }}>
           <Providers>{children}</Providers>
         </div>
         <BottomNav />

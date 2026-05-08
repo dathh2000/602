@@ -14,11 +14,7 @@ export function BottomNav() {
   const pathname = usePathname()
   if (pathname === '/login' || pathname.startsWith('/room/')) return null
   return (
-    // Pinned to viewport bottom rather than the end of a flex column. iOS PWA
-    // standalone has a long-running quirk where `height: 100dvh` / 100% on
-    // <body> can resolve short of the home-indicator zone, leaving a white gap
-    // below the nav. `position: fixed` sidesteps body height entirely.
-    <nav className="fixed bottom-0 left-0 right-0 bg-amber-50 border-t-2 border-amber-200 grid grid-cols-5 z-40"
+    <nav className="bg-amber-50 border-t-2 border-amber-200 grid grid-cols-5 z-40 shrink-0"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       {TABS.map(t => (
         <Link key={t.href} href={t.href}
