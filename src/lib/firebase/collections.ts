@@ -10,3 +10,4 @@ export const billDoc = (roomId: string, billId: string) => doc(db, 'rooms', room
 export const fundDoc = (roomId: string) => doc(db, 'rooms', roomId, 'fund', 'data')
 export const fundTxCol = (roomId: string) => collection(db, 'rooms', roomId, 'fund', 'data', 'transactions')
 export const activitiesCol = (roomId: string) => collection(db, 'rooms', roomId, 'activities')
+export const messagesCol = (roomId: string) => collection(db, 'rooms', roomId, 'messages')

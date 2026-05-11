@@ -14,7 +14,7 @@ import { AddExpenseSheet } from '@/src/components/expense/AddExpenseSheet'
 import { ExpenseDetailSheet } from '@/src/components/expense/ExpenseDetailSheet'
 import { ExpenseCard } from '@/src/components/expense/ExpenseCard'
 import { ActivityBell } from '@/src/components/activity/ActivityBell'
-import { AnnouncementSheet } from '@/src/components/activity/AnnouncementSheet'
+import { ChatButton } from '@/src/components/chat/ChatButton'
 import { FAB } from '@/src/components/layout/FAB'
 import { Tag } from '@/src/components/ui/Tag'
 import { LoadingScreen } from '@/src/components/ui/LoadingScreen'
@@ -34,7 +34,6 @@ export default function DashboardPage() {
   const { activities, unreadCount, hasMore: hasMoreActivities, loadMore: loadMoreActivities } = useActivities(room?.id, user?.uid)
   useFcmToken(room?.id, user?.uid)
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [announceOpen, setAnnounceOpen] = useState(false)
   const [selectedExpense, setSelectedExpense] = useState<typeof expenses[0] | null>(null)
 
   // Fire app-ready khi: auth/room đã quyết, hoặc data hooks đã có snapshot đầu
@@ -103,10 +102,7 @@ export default function DashboardPage() {
               onLoadMore={loadMoreActivities}
             />
           )}
-          <button onClick={() => setAnnounceOpen(true)}
-            className="w-10 h-10 rounded-full bg-white/25 flex items-center justify-center text-lg active:bg-white/40">
-            📢
-          </button>
+          {user && <ChatButton roomId={room.id} currentUserId={user.uid} />}
           <div className="text-right flex flex-col items-end gap-1 ml-1">
             <p className="text-[10px] opacity-80 leading-tight">Mã mời<br/><span className="font-bold tracking-widest">{room.inviteCode}</span></p>
             <button onClick={() => signOut().then(() => window.location.href = '/login')}
@@ -182,15 +178,6 @@ export default function DashboardPage() {
           members={members}
           roomId={room.id}
           currentUserId={user.uid}
-        />
-      )}
-      {room && user && announceOpen && (
-        <AnnouncementSheet
-          open={announceOpen}
-          onClose={() => setAnnounceOpen(false)}
-          roomId={room.id}
-          currentUserId={user.uid}
-          members={members}
         />
       )}
     </main>

@@ -119,3 +119,16 @@ export interface DebtEdge {
   to: string    // userId người được nợ
   amount: number
 }
+
+export interface Message {
+  id: string
+  senderId: string
+  text: string
+  imageUrls?: string[]
+  createdAt: Date
+  readBy: Record<string, Date>
+  // True while the local write is still pending server confirmation. Derived
+  // at read time from Firestore's `snapshot.metadata.hasPendingWrites` — not
+  // stored in the document itself.
+  isPending?: boolean
+}
