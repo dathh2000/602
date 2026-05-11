@@ -81,7 +81,8 @@ export function MessageInput({ onSend, disabled }: Props) {
   const attachFull = pendingImages.length + uploadingCount >= MAX_IMAGES
 
   return (
-    <div className="border-t-2 border-amber-200 bg-amber-50 p-2 space-y-2">
+    <div className="border-t-2 border-amber-200 bg-amber-50 px-2 pt-2 space-y-2"
+      style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom))' }}>
       {(pendingImages.length > 0 || uploading) && (
         <>
           <div className="flex gap-1 overflow-x-auto">
