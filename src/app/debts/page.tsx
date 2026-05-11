@@ -1,9 +1,11 @@
 'use client'
+import { useState } from 'react'
 import { useRoom } from '@/src/hooks/useRoom'
 import { useExpenses } from '@/src/hooks/useExpenses'
 import { useExpensesUnsettled } from '@/src/hooks/useExpensesUnsettled'
 import { useDebts } from '@/src/hooks/useDebts'
 import { DebtCard } from '@/src/components/debt/DebtCard'
+import { DebtSummarySheet } from '@/src/components/debt/DebtSummarySheet'
 import { LoadingScreen } from '@/src/components/ui/LoadingScreen'
 import { formatVND } from '@/src/lib/utils'
 
@@ -12,6 +14,7 @@ export default function DebtsPage() {
   const { expenses: unsettledExpenses } = useExpensesUnsettled(room?.id)
   const debts = useDebts(unsettledExpenses, members)
   const { expenses: recent } = useExpenses(room?.id, 20)
+  const [summaryOpen, setSummaryOpen] = useState(false)
 
   if (loading) return <LoadingScreen />
 
@@ -28,9 +31,15 @@ export default function DebtsPage() {
 
   return (
     <main className="p-4 space-y-4">
-      <div className="bg-gradient-to-r from-amber-400 to-red-500 rounded-2xl p-4 text-white">
-        <p className="text-sm font-bold">👥 Công nợ</p>
-        <p className="text-xs opacity-80">Đã tối giản hóa số giao dịch</p>
+      <div className="bg-gradient-to-r from-amber-400 to-red-500 rounded-2xl p-4 text-white flex justify-between items-center gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-bold">👥 Công nợ</p>
+          <p className="text-xs opacity-80">Đã tối giản hóa số giao dịch</p>
+        </div>
+        <button onClick={() => setSummaryOpen(true)}
+          className="bg-white/25 active:bg-white/40 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1 shrink-0">
+          📊 Tổng hợp
+        </button>
       </div>
 
       {debts.length === 0 ? (
@@ -54,6 +63,14 @@ export default function DebtsPage() {
           </div>
         </div>
       )}
+
+      <DebtSummarySheet
+        open={summaryOpen}
+        onClose={() => setSummaryOpen(false)}
+        expenses={unsettledExpenses}
+        members={members}
+        roomName={room.name}
+      />
     </main>
   )
 }
