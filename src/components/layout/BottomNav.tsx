@@ -12,7 +12,7 @@ const TABS = [
 
 export function BottomNav() {
   const pathname = usePathname()
-  if (pathname === '/login' || pathname.startsWith('/room/')) return null
+  if (pathname === '/login' || pathname === '/chat' || pathname.startsWith('/room/')) return null
   return (
     <nav className="bg-amber-50 border-t-2 border-amber-200 grid grid-cols-5 z-40 shrink-0"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
