@@ -46,8 +46,13 @@ export function useMessages(
       })
       // Reverse → oldest first, newest at the bottom (chat order)
       setMessages(rows.reverse())
-      setHasMore(snap.size === pageLimit)
-      setLoaded(true)
+      // Gate hasMore on server-confirmed snapshots only — a cache fire with
+      // fewer-than-pageLimit rows on initial load would otherwise show "— Hết —"
+      // briefly before the server reply arrives.
+      if (!snap.metadata.fromCache) {
+        setHasMore(snap.size === pageLimit)
+        setLoaded(true)
+      }
     })
   }, [roomId, pageLimit])
 

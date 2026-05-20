@@ -18,13 +18,17 @@ export function useActivities(
   useEffect(() => {
     if (!roomId) return
     const q = query(activitiesCol(roomId), orderBy('createdAt', 'desc'), limit(pageLimit))
-    return onSnapshot(q, snap => {
+    // `includeMetadataChanges: true` + the `fromCache` guard prevent the
+    // "— Hết —" flash on fresh loads: cache-only snapshots may briefly return
+    // fewer than pageLimit items while the server reply is in flight. We only
+    // flip hasMore once we've seen server-confirmed data.
+    return onSnapshot(q, { includeMetadataChanges: true }, snap => {
       setActivities(snap.docs.map(d => ({
         id: d.id,
         ...d.data(),
         createdAt: d.data().createdAt?.toDate() ?? new Date(),
       } as Activity)))
-      setHasMore(snap.size === pageLimit)
+      if (!snap.metadata.fromCache) setHasMore(snap.size === pageLimit)
     })
   }, [roomId, pageLimit])
 

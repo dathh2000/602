@@ -23,7 +23,11 @@ export function useExpenses(roomId: string | undefined, pageSize?: number) {
     const constraints: QueryConstraint[] = [orderBy('createdAt', 'desc')]
     if (pageLimit !== null) constraints.push(limit(pageLimit))
     const q = query(expensesCol(roomId), ...constraints)
-    return onSnapshot(q, snap => {
+    // `includeMetadataChanges: true` so we can distinguish a cache-only snapshot
+    // (empty/stale on fresh loads) from a server-confirmed one. We only flip
+    // hasMore based on the server snapshot — otherwise the "— Hết —" message
+    // flashes briefly while the network request is still in flight.
+    return onSnapshot(q, { includeMetadataChanges: true }, snap => {
       setExpenses(snap.docs.map(d => ({
         id: d.id,
         ...d.data(),
@@ -31,8 +35,10 @@ export function useExpenses(roomId: string | undefined, pageSize?: number) {
         createdAt: d.data().createdAt?.toDate(),
         settlements: d.data().settlements ?? {},
       } as Expense)))
-      if (pageLimit !== null) setHasMore(snap.size === pageLimit)
-      setLoaded(true)
+      if (pageLimit !== null && !snap.metadata.fromCache) {
+        setHasMore(snap.size === pageLimit)
+      }
+      if (!snap.metadata.fromCache) setLoaded(true)
     })
   }, [roomId, pageLimit])
 
